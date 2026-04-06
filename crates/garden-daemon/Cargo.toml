@@ -1,0 +1,11 @@
+[package]
+name = "garden-daemon"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+garden-core = { path = "../garden-core" }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

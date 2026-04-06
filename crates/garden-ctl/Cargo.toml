@@ -1,0 +1,9 @@
+[package]
+name = "garden-ctl"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+garden-core = { path = "../garden-core" }
+clap = { workspace = true }
+anyhow = { workspace = true }
