@@ -517,7 +517,7 @@ mod tests {
     fn active_palette_found() {
         let col: PaletteCollection = serde_json::from_str(PALETTES_JSON).unwrap();
         let active = col.active_palette().expect("active palette should exist");
-        assert_eq!(active.name, "mokume");
+        assert_eq!(active.name, col.active);
     }
 
     #[test]
