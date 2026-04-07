@@ -1,7 +1,7 @@
 //! Integration tests for the Garden theme generators.
 //!
 //! These tests load the real `_config/palettes.json`, generate output
-//! for the mokume palette, and verify that the generated files contain
+//! for the active palette, and verify that the generated files contain
 //! the expected color values and structural elements.
 
 use garden_core::{ColorRole, PaletteCollection};
@@ -10,11 +10,11 @@ use garden_themes::generators::{self, ThemeGenerator};
 /// The actual palettes.json shipped with the repo.
 const PALETTES_JSON: &str = include_str!("../../../_config/palettes.json");
 
-/// Helper: load the collection and return the mokume palette.
-fn mokume_collection() -> PaletteCollection {
+/// Helper: load the collection and validate it.
+fn active_collection() -> PaletteCollection {
     let col = PaletteCollection::from_json(PALETTES_JSON).unwrap();
     col.validate().unwrap();
-    assert_eq!(col.active, "mokume");
+    assert!(col.active_palette().is_some(), "active palette should exist");
     col
 }
 
@@ -22,7 +22,7 @@ fn mokume_collection() -> PaletteCollection {
 
 #[test]
 fn kitty_output_contains_header() {
-    let col = mokume_collection();
+    let col = active_collection();
     let palette = col.active_palette().unwrap();
     let kitty = generators::kitty::Kitty;
     let output = kitty.generate(palette);
@@ -32,7 +32,7 @@ fn kitty_output_contains_header() {
         "should contain the generator header"
     );
     assert!(
-        output.contains("mokume"),
+        output.contains(&col.active),
         "should name the palette in the header"
     );
     assert!(
@@ -42,8 +42,8 @@ fn kitty_output_contains_header() {
 }
 
 #[test]
-fn kitty_output_contains_mokume_colors() {
-    let col = mokume_collection();
+fn kitty_output_contains_palette_colors() {
+    let col = active_collection();
     let palette = col.active_palette().unwrap();
     let kitty = generators::kitty::Kitty;
     let output = kitty.generate(palette);
@@ -62,7 +62,7 @@ fn kitty_output_contains_mokume_colors() {
 
 #[test]
 fn kitty_output_has_all_16_ansi_slots() {
-    let col = mokume_collection();
+    let col = active_collection();
     let palette = col.active_palette().unwrap();
     let kitty = generators::kitty::Kitty;
     let output = kitty.generate(palette);
@@ -85,19 +85,19 @@ fn kitty_relative_path() {
 
 #[test]
 fn fish_output_contains_header() {
-    let col = mokume_collection();
+    let col = active_collection();
     let palette = col.active_palette().unwrap();
     let fish = generators::fish::Fish;
     let output = fish.generate(palette);
 
     assert!(output.contains("Garden theme"));
-    assert!(output.contains("mokume"));
+    assert!(output.contains(&col.active));
     assert!(output.contains("Do not edit by hand"));
 }
 
 #[test]
-fn fish_output_contains_mokume_colors() {
-    let col = mokume_collection();
+fn fish_output_contains_palette_colors() {
+    let col = active_collection();
     let palette = col.active_palette().unwrap();
     let fish = generators::fish::Fish;
     let output = fish.generate(palette);
@@ -116,7 +116,7 @@ fn fish_output_contains_mokume_colors() {
 
 #[test]
 fn fish_output_sets_all_expected_variables() {
-    let col = mokume_collection();
+    let col = active_collection();
     let palette = col.active_palette().unwrap();
     let fish = generators::fish::Fish;
     let output = fish.generate(palette);
@@ -144,7 +144,7 @@ fn fish_output_sets_all_expected_variables() {
 
 #[test]
 fn fish_selection_uses_background_flag() {
-    let col = mokume_collection();
+    let col = active_collection();
     let palette = col.active_palette().unwrap();
     let fish = generators::fish::Fish;
     let output = fish.generate(palette);
@@ -165,19 +165,19 @@ fn fish_relative_path() {
 
 #[test]
 fn kakoune_output_contains_header() {
-    let col = mokume_collection();
+    let col = active_collection();
     let palette = col.active_palette().unwrap();
     let kak = generators::kakoune::Kakoune;
     let output = kak.generate(palette);
 
     assert!(output.contains("Garden theme"));
-    assert!(output.contains("mokume"));
+    assert!(output.contains(&col.active));
     assert!(output.contains("Do not edit by hand"));
 }
 
 #[test]
-fn kakoune_output_contains_mokume_colors() {
-    let col = mokume_collection();
+fn kakoune_output_contains_palette_colors() {
+    let col = active_collection();
     let palette = col.active_palette().unwrap();
     let kak = generators::kakoune::Kakoune;
     let output = kak.generate(palette);
@@ -196,7 +196,7 @@ fn kakoune_output_contains_mokume_colors() {
 
 #[test]
 fn kakoune_output_uses_rgb_format() {
-    let col = mokume_collection();
+    let col = active_collection();
     let palette = col.active_palette().unwrap();
     let kak = generators::kakoune::Kakoune;
     let output = kak.generate(palette);
@@ -215,7 +215,7 @@ fn kakoune_output_uses_rgb_format() {
 
 #[test]
 fn kakoune_output_sets_all_expected_faces() {
-    let col = mokume_collection();
+    let col = active_collection();
     let palette = col.active_palette().unwrap();
     let kak = generators::kakoune::Kakoune;
     let output = kak.generate(palette);
@@ -282,7 +282,7 @@ fn all_generators_registered() {
 
 #[test]
 fn all_generators_produce_nonempty_output() {
-    let col = mokume_collection();
+    let col = active_collection();
     let palette = col.active_palette().unwrap();
 
     for gen in generators::all() {
