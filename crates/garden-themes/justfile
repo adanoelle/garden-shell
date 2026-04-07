@@ -1,0 +1,63 @@
+palettes := source_directory() + "/../../_config/palettes.json"
+out := "/tmp/garden-themes"
+
+# Show available recipes
+help:
+    @just --list
+
+# Build garden-themes
+build:
+    cargo build -p garden-themes
+
+# Run tests
+test:
+    cargo test -p garden-themes
+
+# Type-check
+check:
+    cargo check -p garden-themes
+
+# Lint
+clippy:
+    cargo clippy -p garden-themes
+
+# Run the CLI
+run *args:
+    cargo run -p garden-themes -- {{args}}
+
+# Validate palettes.json
+validate:
+    cargo run -p garden-themes -- validate {{palettes}}
+
+# List all palettes
+list:
+    cargo run -p garden-themes -- list {{palettes}}
+
+# Generate theme files for the active palette (or a named one)
+generate palette="":
+    cargo run -p garden-themes -- generate \
+        --palettes {{palettes}} \
+        {{ if palette != "" { "--name " + palette } else { "" } }} \
+        --output {{out}}
+
+# Apply generated kitty colors to the current terminal
+apply-kitty:
+    kitty @ set-colors {{out}}/kitty/garden-theme.conf
+
+# Apply generated fish theme to all sessions
+apply-fish:
+    fish -c "source {{out}}/fish/conf.d/garden-theme.fish"
+
+# Apply generated kakoune theme to all running sessions
+apply-kak:
+    for s in $(kak -l); do \
+        echo "source {{out}}/kak/colors/garden.kak" | kak -p "$s"; \
+    done
+
+# Generate + apply to kitty, fish, and kakoune
+try palette="": (generate palette)
+    kitty @ set-colors {{out}}/kitty/garden-theme.conf
+    fish -c "source {{out}}/fish/conf.d/garden-theme.fish"
+    for s in $(kak -l); do \
+        echo "source {{out}}/kak/colors/garden.kak" | kak -p "$s"; \
+    done

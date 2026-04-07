@@ -165,6 +165,7 @@ name = "garden-themes"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "clap",
  "garden-core",
  "serde",
  "serde_json",

@@ -2,15 +2,18 @@
 
 ## Project Overview
 
-Garden is a composable infrastructure and desktop environment for NixOS,
-built as a den namespace provider. It exports aspects via `flake.denful.garden`
-that consumers (like the fern NixOS config) can import.
+Garden is a composable infrastructure and desktop environment for NixOS, built
+as a den namespace provider. It exports aspects via `flake.denful.garden` that
+consumers (like the fern NixOS config) can import.
 
 ## Architecture
 
-- **Den namespace**: `garden` -- exported via `(inputs.den.namespace "garden" true)`
-- **Aspects**: palette, terminal, toolkit, daemon, ctl, tui, observability, shell
-- **Rust crates**: garden-core, garden-daemon, garden-ctl, garden-tui, garden-themes
+- **Den namespace**: `garden` -- exported via
+  `(inputs.den.namespace "garden" true)`
+- **Aspects**: palette, terminal, toolkit, daemon, ctl, tui, observability,
+  shell
+- **Rust crates**: garden-core, garden-daemon, garden-ctl, garden-tui,
+  garden-themes
 - **QML**: Quickshell desktop shell (stub)
 
 ## Directory Structure
@@ -54,7 +57,8 @@ nix develop          # Enter dev shell
 ## Den Patterns
 
 - Aspects use `garden.<name>` syntax (namespaced, not `den.aspects.<name>`)
-- `includes` composes aspects: `garden.terminal = { includes = [ garden.palette ]; ... }`
+- `includes` composes aspects:
+  `garden.terminal = { includes = [ garden.palette ]; ... }`
 - Underscore directories (`_qml/`, `_config/`) are skipped by import-tree
 - Consumer imports: `(inputs.den.namespace "garden" [ inputs.garden-shell ])`
 
