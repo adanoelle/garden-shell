@@ -1,7 +1,7 @@
 # modules/packages.nix — Nix packages for Rust crates + QML
 { inputs, ... }:
 {
-  perSystem = { pkgs, system, ... }:
+  perSystem = { pkgs, system, self', ... }:
     let
       rustPkgs = import inputs.nixpkgs {
         inherit system;
@@ -35,6 +35,15 @@
           pname = "garden-themes";
           cargoBuildFlags = [ "-p" "garden-themes" ];
         });
+
+        garden-themes-output = pkgs.runCommand "garden-themes-output"
+          {
+            nativeBuildInputs = [ self'.packages.garden-themes ];
+          } ''
+          garden-themes generate \
+            --palettes ${../_config/palettes.json} \
+            --output $out
+        '';
 
         garden-shell-qml = pkgs.stdenvNoCC.mkDerivation {
           pname = "garden-shell-qml";

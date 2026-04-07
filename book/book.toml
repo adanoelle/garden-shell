@@ -1,0 +1,16 @@
+[book]
+title = "Garden Shell"
+authors = ["Ada"]
+description = "Documentation for the Garden shell palette and theming system"
+language = "en"
+src = "src"
+
+[build]
+build-dir = "build"
+
+[output.html]
+default-theme = "coal"
+preferred-dark-theme = "coal"
+
+[output.html.search]
+enable = true

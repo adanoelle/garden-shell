@@ -17,14 +17,9 @@
           nixpkgs-fmt
           just
           cargo-watch
+          mdbook
         ];
 
-        shellHook = ''
-          echo "garden dev shell"
-          echo "  cargo build      -- build all crates"
-          echo "  cargo test       -- run tests"
-          echo "  just             -- list recipes"
-        '';
       };
     };
 }
