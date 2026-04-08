@@ -10,8 +10,8 @@
 //! | Generator | Output file                          | Format                |
 //! |-----------|--------------------------------------|-----------------------|
 //! | [`Kitty`]   | `kitty/garden-theme.conf`            | Kitty color conf      |
-//! | [`Fish`]    | `fish/conf.d/garden-theme.fish`      | Fish universal vars   |
-//! | [`Kakoune`] | `kak/colors/garden.kak`              | Kakoune face decls    |
+//! | [`Fish`]    | `fish/garden-theme.fish`             | Fish universal vars   |
+//! | [`Kakoune`] | `kak/garden.kak`                     | Kakoune face decls    |
 //!
 //! # Adding a new generator
 //!
@@ -25,7 +25,7 @@
 //! use garden_themes::generators::{all, ThemeGenerator};
 //! use garden_core::PaletteCollection;
 //!
-//! let col = PaletteCollection::from_json("...").unwrap();
+//! let col = PaletteCollection::from_toml("...").unwrap();
 //! let palette = col.active_palette().unwrap();
 //!
 //! for gen in all() {

@@ -10,7 +10,7 @@
 //! # Architecture
 //!
 //! ```text
-//! palettes.json
+//! palettes.toml
 //!     → garden_core::PaletteCollection   (parse + validate)
 //!     → generators::all()                (discover generators)
 //!     → ThemeGenerator::generate()       (produce config text)
@@ -24,7 +24,7 @@
 //! use garden_themes::generators::{all, ThemeGenerator};
 //! use std::path::Path;
 //!
-//! let col = PaletteCollection::from_file(Path::new("palettes.json")).unwrap();
+//! let col = PaletteCollection::from_file(Path::new("palettes.toml")).unwrap();
 //! col.validate().unwrap();
 //! let palette = col.active_palette().unwrap();
 //!
