@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git log:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(nix eval:*)",
+      "WebFetch(domain:toml.io)",
+      "WebFetch(domain:quickshell.org)",
+      "Bash(cargo build:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo run:*)"
+    ]
+  }
+}
