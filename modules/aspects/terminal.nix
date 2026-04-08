@@ -15,9 +15,9 @@
       {
         # Kitty: include garden theme from mutable themes dir so SIGUSR1
         # config reload picks up palette changes across all instances.
-        # globinclude silently skips missing files (safe before first apply).
+        # Relative path from ~/.config/kitty/ to ~/.config/garden/themes/.
         programs.kitty.extraConfig = ''
-          globinclude ${themesDir}/kitty/garden-theme.conf
+          include ../garden/themes/kitty/garden-theme.conf
         '';
 
         # Fish: source garden theme on shell init (universal variables
