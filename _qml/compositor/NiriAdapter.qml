@@ -34,6 +34,23 @@ Singleton {
         _niriMsg(["action", action]);
     }
 
+    /// Return all windows on the given workspace ID.
+    function windowsForWorkspace(wsId: int): var {
+        const result = [];
+        for (const id in root._windows) {
+            if (root._windows[id].workspaceId === wsId) {
+                result.push(root._windows[id]);
+            }
+        }
+        return result;
+    }
+
+    /// Look up a workspace ID by name. Returns -1 if not found.
+    function workspaceId(name: string): int {
+        const ws = root._workspaces[name];
+        return ws ? ws.id : -1;
+    }
+
     // ── Event stream process ────────────────────────────────────────
 
     Process {

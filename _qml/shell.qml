@@ -2,11 +2,13 @@ import Quickshell
 import Quickshell.Wayland
 import "bar"
 import "compositor"
+import "overlays"
 import "services"
 
 /// Garden Shell — root entry point.
 ///
-/// Creates a Bar instance for each connected screen. Singletons
+/// Creates a Bar instance for each connected screen and instantiates
+/// overlay windows (launcher, channel switcher). Singletons
 /// (Theme, CompositorService, NiriAdapter, ConfigService, HookService,
 /// ModeService) are auto-loaded by Quickshell from their pragma
 /// Singleton declarations.
@@ -26,4 +28,8 @@ ShellRoot {
             screen: modelData
         }
     }
+
+    // Overlays (hidden until toggled via IPC).
+    Launcher {}
+    ChannelSwitcher {}
 }

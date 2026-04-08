@@ -18,6 +18,8 @@ Singleton {
 
     signal channelSwitched(string name)
     signal paletteChanged(string name)
+    signal launcherToggled()
+    signal switcherToggled()
 
     // ── IPC handler ─────────────────────────────────────────────────
 
@@ -42,6 +44,16 @@ Singleton {
 
         function getPalette(): string {
             return Theme.activePalette;
+        }
+
+        function toggleLauncher(): string {
+            root.launcherToggled();
+            return "toggled launcher";
+        }
+
+        function toggleSwitcher(): string {
+            root.switcherToggled();
+            return "toggled switcher";
         }
     }
 }
