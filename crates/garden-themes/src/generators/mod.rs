@@ -35,6 +35,7 @@
 //! ```
 
 pub mod fish;
+pub mod fzf;
 pub mod kakoune;
 pub mod kitty;
 
@@ -72,5 +73,6 @@ pub fn all() -> Vec<Box<dyn ThemeGenerator>> {
         Box::new(kitty::Kitty),
         Box::new(fish::Fish),
         Box::new(kakoune::Kakoune),
+        Box::new(fzf::Fzf),
     ]
 }

@@ -23,9 +23,13 @@
         # Fish: source garden theme on shell init (universal variables
         # propagate to all sessions, but this ensures new sessions start
         # with the current palette).
+        # Also source fzf theme to set FZF_DEFAULT_OPTS with palette colors.
         programs.fish.interactiveShellInit = ''
           if test -f ${themesDir}/fish/garden-theme.fish
             source ${themesDir}/fish/garden-theme.fish
+          end
+          if test -f ${themesDir}/fzf/garden-theme.fish
+            source ${themesDir}/fzf/garden-theme.fish
           end
         '';
 
