@@ -1,0 +1,158 @@
+input {
+    keyboard {
+        xkb {
+            layout ""
+            model ""
+            rules ""
+            variant ""
+        }
+        repeat-delay 600
+        repeat-rate 25
+        track-layout "global"
+    }
+    touchpad {
+        tap
+        natural-scroll
+    }
+    focus-follows-mouse
+}
+screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
+prefer-no-csd
+layout {
+    gaps 2
+    struts {
+        left 0
+        right 0
+        top 0
+        bottom 0
+    }
+    focus-ring { off; }
+    border {
+        width 1
+        active-color "#4a5568"
+        inactive-color "#3a4456"
+    }
+    default-column-width { proportion 0.500000; }
+    preset-column-widths {
+        proportion 0.500000
+        proportion 0.750000
+        proportion 1.000000
+    }
+    center-focused-column "on-overflow"
+}
+cursor {
+    xcursor-theme "default"
+    xcursor-size 24
+}
+hotkey-overlay { skip-at-startup; }
+binds {
+    // ── Channels ──────────────────────────────────────────────────
+    Mod+1 { focus-workspace "studio"; }
+    Mod+2 { focus-workspace "research"; }
+    Mod+3 { focus-workspace "writing"; }
+    Mod+4 { focus-workspace "music"; }
+    Mod+5 { focus-workspace "system"; }
+    Mod+Shift+1 { move-window-to-workspace "studio"; }
+    Mod+Shift+2 { move-window-to-workspace "research"; }
+    Mod+Shift+3 { move-window-to-workspace "writing"; }
+    Mod+Shift+4 { move-window-to-workspace "music"; }
+    Mod+Shift+5 { move-window-to-workspace "system"; }
+
+    // ── Garden shell overlays ─────────────────────────────────────
+    Mod+Slash { spawn "sh" "-c" "qs -c garden ipc call garden toggleLauncher"; }
+    Mod+Tab   { spawn "sh" "-c" "qs -c garden ipc call garden toggleSwitcher"; }
+
+    // ── Navigation ────────────────────────────────────────────────
+    Mod+H { focus-column-left; }
+    Mod+J { focus-window-down; }
+    Mod+K { focus-window-up; }
+    Mod+L { focus-column-right; }
+    Mod+Shift+H { move-column-left; }
+    Mod+Shift+J { move-window-down; }
+    Mod+Shift+K { move-window-up; }
+    Mod+Shift+L { move-column-right; }
+    Mod+Shift+Tab { focus-workspace-up; }
+    Mod+WheelScrollDown cooldown-ms=25 { focus-column-right; }
+    Mod+WheelScrollUp cooldown-ms=25 { focus-column-left; }
+
+    // ── Layout ────────────────────────────────────────────────────
+    Mod+BracketLeft { consume-or-expel-window-left; }
+    Mod+BracketRight { consume-or-expel-window-right; }
+    Mod+Equal { set-column-width "+10%"; }
+    Mod+Minus { set-column-width "-10%"; }
+    Mod+F { maximize-column; }
+    Mod+R { switch-preset-column-width; }
+    Mod+V { toggle-window-floating; }
+
+    // ── Spawn ─────────────────────────────────────────────────────
+    Mod+N { spawn "kitty"; }
+    Mod+B { spawn "firefox"; }
+
+    // ── Session ───────────────────────────────────────────────────
+    Mod+A { toggle-overview; }
+    Mod+Shift+Q { close-window; }
+    Mod+Shift+Slash { show-hotkey-overlay; }
+    Mod+Shift+E { quit; }
+    Print { screenshot; }
+    Mod+Print { screenshot-window; }
+}
+workspace "studio"
+workspace "research"
+workspace "writing"
+workspace "music"
+workspace "system"
+spawn-at-startup "xwayland-satellite"
+spawn-at-startup "quickshell" "-c" "garden"
+spawn-at-startup "kitty"
+spawn-at-startup "kitty" "-e" "btop"
+window-rule {
+    match app-id="^kitty$" at-startup=true
+    open-on-workspace "research"
+}
+window-rule {
+    match app-id="^kitty$" at-startup=true title="btop"
+    open-on-workspace "system"
+}
+window-rule {
+    match app-id="^garden$"
+    open-floating true
+}
+window-rule {
+    match title="scratchpad-terminal"
+    open-floating true
+}
+window-rule {
+    match app-id="^lazygit$"
+    open-floating true
+}
+window-rule {
+    match title="frontier"
+    match title="andes"
+    match title="summit"
+    border { active-color "#c4796b"; }
+}
+window-rule {
+    match title="dgx-"
+    border { active-color "#c9b88c"; }
+}
+window-rule {
+    match title="homelab"
+    border { active-color "#7c9a7c"; }
+}
+animations {
+    config-notification-open-close {
+        duration-ms 150
+        curve "ease-out-cubic"
+    }
+    horizontal-view-movement { spring damping-ratio=1.000000 epsilon=0.000100 stiffness=1000; }
+    window-close {
+        duration-ms 100
+        curve "ease-out-cubic"
+    }
+    window-open {
+        duration-ms 150
+        curve "ease-out-expo"
+        custom-shader "vec4 open_color(vec3 coords_geo, vec3 size_geo) {\n    vec3 coords_tex = niri_geo_to_tex * coords_geo;\n    vec4 color = texture2D(niri_tex, coords_tex.st);\n    color *= niri_clamped_progress;\n    return color;\n}\n"
+    }
+    workspace-switch { spring damping-ratio=1.000000 epsilon=0.000100 stiffness=800; }
+}

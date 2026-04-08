@@ -28,6 +28,13 @@
         install -Dm644 ${../../_config/settings.json} \
           ${config.xdg.configHome}/garden/settings.json
       '';
+
+      # Deploy niri compositor config as mutable copy.
+      # Keybinds and layout can be edited at runtime by the settings panel.
+      home.activation.gardenNiri = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        install -Dm644 ${../../_config/niri.kdl} \
+          ${config.xdg.configHome}/niri/config.kdl
+      '';
     };
   };
 }
