@@ -90,6 +90,12 @@ Singleton {
     Process {
         id: applyProcess
         running: false
+        stdout: SplitParser {
+            onRead: data => console.log("garden-themes:", data)
+        }
+        stderr: SplitParser {
+            onRead: data => console.warn("garden-themes stderr:", data)
+        }
         onExited: (exitCode, exitStatus) => {
             if (exitCode !== 0) {
                 console.warn("garden-themes apply failed with exit code", exitCode);

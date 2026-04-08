@@ -9,7 +9,7 @@
     };
 
     homeManager = { ... }: {
-      # S1 stub: user-level CLI tools
+      # TODO: add garden-themes to home.packages once overlay is defined
     };
   };
 }

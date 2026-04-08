@@ -20,6 +20,9 @@
           mdbook
         ];
 
+        shellHook = ''
+          export GARDEN_THEMES_BIN="$PWD/target/debug/garden-themes"
+        '';
       };
     };
 }
