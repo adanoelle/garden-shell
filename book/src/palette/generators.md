@@ -11,8 +11,8 @@ fragment for one application. Garden currently ships three generators:
 | Generator | Output file | Format |
 |-----------|------------|--------|
 | kitty | `kitty/garden-theme.conf` | Kitty color conf (`#rrggbb`) |
-| fish | `fish/conf.d/garden-theme.fish` | Fish universal vars (bare hex) |
-| kakoune | `kak/colors/garden.kak` | Kakoune face declarations (`rgb:rrggbb`) |
+| fish | `fish/garden-theme.fish` | Fish universal vars (bare hex) |
+| kakoune | `kak/garden.kak` | Kakoune face declarations (`rgb:rrggbb`) |
 
 Run all generators for the active palette:
 
@@ -168,7 +168,7 @@ Change one hex value in your palette and you need to update kitty.conf,
 garden-theme.fish, and garden.kak by hand. With four palettes and three
 generators, that's 12 files to keep in sync.
 
-The generator pipeline means `palettes.json` is the single source. Change a
+The generator pipeline means `palettes.toml` is the single source. Change a
 color there, run `just themes generate`, and every output file is consistent.
 
 ### Why a trait rather than templates?
@@ -283,5 +283,5 @@ that verify:
 - All expected slots/variables/faces are present
 - The relative path is correct
 
-Tests load palettes from the real `_config/palettes.json` via
+Tests load palettes from the real `_config/palettes.toml` via
 `include_str!()`, so they always test against the actual built-in palettes.

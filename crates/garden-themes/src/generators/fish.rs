@@ -1,6 +1,6 @@
 //! Fish shell syntax-highlighting theme generator.
 //!
-//! Produces a `fish/conf.d/garden-theme.fish` file that sets the
+//! Produces a `fish/garden-theme.fish` file that sets the
 //! `fish_color_*` universal variables mapping Garden's semantic roles
 //! to fish's syntax highlighting categories.
 //!
@@ -44,7 +44,7 @@ impl ThemeGenerator for Fish {
     }
 
     fn relative_path(&self) -> &str {
-        "fish/conf.d/garden-theme.fish"
+        "fish/garden-theme.fish"
     }
 
     fn generate(&self, palette: &Palette) -> String {

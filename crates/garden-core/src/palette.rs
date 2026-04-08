@@ -2,7 +2,7 @@
 //!
 //! This module provides the core data model for Garden's 13-role semantic
 //! color system. Every palette defines exactly 13 [`ColorRole`] entries,
-//! and the [`PaletteCollection`] type represents the full `palettes.json`
+//! and the [`PaletteCollection`] type represents the full `palettes.toml`
 //! file including the active palette selection.
 //!
 //! # Design
@@ -35,7 +35,7 @@
 //! # Pipeline
 //!
 //! ```text
-//! palettes.json
+//! palettes.toml
 //!     → PaletteCollection::from_file()
 //!     → .validate()
 //!     → .active_palette()
@@ -51,7 +51,7 @@
 //! use garden_core::palette::{PaletteCollection, ColorRole};
 //! use std::path::Path;
 //!
-//! let col = PaletteCollection::from_file(Path::new("palettes.json")).unwrap();
+//! let col = PaletteCollection::from_file(Path::new("palettes.toml")).unwrap();
 //! col.validate().unwrap();
 //!
 //! let palette = col.active_palette().unwrap();
@@ -68,8 +68,8 @@
 //! ```no_run
 //! use garden_core::palette::{PaletteCollection, ColorRole};
 //!
-//! # let json = "{}";
-//! # let col: PaletteCollection = serde_json::from_str(json).unwrap();
+//! # let toml_str = "active = \"x\"\n[palettes]";
+//! # let col: PaletteCollection = toml::from_str(toml_str).unwrap();
 //! let palette = col.active_palette().unwrap();
 //! for role in ColorRole::ALL {
 //!     if let Some(hex) = palette.color(*role) {
@@ -203,7 +203,7 @@ impl fmt::Display for HexColor {
 /// | Semantic   | `Accent`, `Urgent`, `Ok`                      |
 ///
 /// Variants serialize to kebab-case via `#[serde(rename)]` to match the
-/// keys in `palettes.json` (e.g. `BaseDeep` ↔ `"base-deep"`).
+/// keys in `palettes.toml` (e.g. `BaseDeep` ↔ `"base-deep"`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum ColorRole {
     /// Deepest background surface — used for recessed areas and gutters.
@@ -388,7 +388,7 @@ impl Palette {
 
 // ── PaletteCollection ─────────────────────────────────────────────────
 
-/// The top-level structure of `palettes.json`: a set of named palettes
+/// The top-level structure of `palettes.toml`: a set of named palettes
 /// and an `active` key selecting which one is currently in use.
 ///
 /// # Examples
@@ -396,8 +396,8 @@ impl Palette {
 /// ```no_run
 /// use garden_core::palette::PaletteCollection;
 ///
-/// let json = std::fs::read_to_string("palettes.json").unwrap();
-/// let col = PaletteCollection::from_json(&json).unwrap();
+/// let toml = std::fs::read_to_string("palettes.toml").unwrap();
+/// let col = PaletteCollection::from_toml(&toml).unwrap();
 /// col.validate().unwrap();
 ///
 /// for (name, palette) in &col.palettes {
@@ -415,14 +415,23 @@ pub struct PaletteCollection {
 }
 
 impl PaletteCollection {
-    /// Parses a [`PaletteCollection`] from a JSON string.
+    /// Parses a [`PaletteCollection`] from a TOML string.
     ///
     /// # Errors
     ///
-    /// Returns an error message if the JSON is malformed or if any
+    /// Returns an error message if the TOML is malformed or if any
     /// [`HexColor`] value fails validation.
-    pub fn from_json(json: &str) -> Result<Self, String> {
-        serde_json::from_str(json).map_err(|e| format!("failed to parse palettes JSON: {e}"))
+    pub fn from_toml(toml_str: &str) -> Result<Self, String> {
+        toml::from_str(toml_str).map_err(|e| format!("failed to parse palettes TOML: {e}"))
+    }
+
+    /// Serializes the collection to a pretty-printed TOML string.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error message if serialization fails.
+    pub fn to_toml_pretty(&self) -> Result<String, String> {
+        toml::to_string_pretty(self).map_err(|e| format!("failed to serialize palettes TOML: {e}"))
     }
 
     /// Reads and parses a [`PaletteCollection`] from a file path.
@@ -434,7 +443,7 @@ impl PaletteCollection {
     pub fn from_file(path: &Path) -> Result<Self, String> {
         let contents = std::fs::read_to_string(path)
             .map_err(|e| format!("failed to read {}: {e}", path.display()))?;
-        Self::from_json(&contents)
+        Self::from_toml(&contents)
     }
 
     /// Returns a reference to the currently active palette, or `None`
@@ -484,20 +493,20 @@ impl PaletteCollection {
 mod tests {
     use super::*;
 
-    const PALETTES_JSON: &str = include_str!("../../../_config/palettes.json");
+    const PALETTES_TOML: &str = include_str!("../../../_config/palettes.toml");
 
     #[test]
     fn parse_and_roundtrip() {
-        let col: PaletteCollection = serde_json::from_str(PALETTES_JSON).unwrap();
-        let json = serde_json::to_string_pretty(&col).unwrap();
-        let col2: PaletteCollection = serde_json::from_str(&json).unwrap();
+        let col = PaletteCollection::from_toml(PALETTES_TOML).unwrap();
+        let toml_out = col.to_toml_pretty().unwrap();
+        let col2 = PaletteCollection::from_toml(&toml_out).unwrap();
         assert_eq!(col.active, col2.active);
         assert_eq!(col.palettes.len(), col2.palettes.len());
     }
 
     #[test]
     fn all_builtins_have_13_roles() {
-        let col: PaletteCollection = serde_json::from_str(PALETTES_JSON).unwrap();
+        let col = PaletteCollection::from_toml(PALETTES_TOML).unwrap();
         assert!(
             col.validate().is_ok(),
             "validation errors: {:?}",
@@ -515,7 +524,7 @@ mod tests {
 
     #[test]
     fn active_palette_found() {
-        let col: PaletteCollection = serde_json::from_str(PALETTES_JSON).unwrap();
+        let col = PaletteCollection::from_toml(PALETTES_TOML).unwrap();
         let active = col.active_palette().expect("active palette should exist");
         assert_eq!(active.name, col.active);
     }

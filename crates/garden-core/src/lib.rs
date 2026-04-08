@@ -10,7 +10,7 @@
 //!
 //! | Module       | Purpose                                              |
 //! |-------------|-------------------------------------------------------|
-//! | [`palette`] | 13-role semantic color system and `palettes.json` I/O |
+//! | [`palette`] | 13-role semantic color system and `palettes.toml` I/O |
 //! | [`types`]   | Host configuration, connection state, tier model      |
 //! | [`events`]  | Typed IPC events for the Garden event bus              |
 //!
@@ -20,7 +20,7 @@
 //! use garden_core::{PaletteCollection, ColorRole};
 //! use std::path::Path;
 //!
-//! let col = PaletteCollection::from_file(Path::new("palettes.json")).unwrap();
+//! let col = PaletteCollection::from_file(Path::new("palettes.toml")).unwrap();
 //! col.validate().unwrap();
 //!
 //! let palette = col.active_palette().unwrap();

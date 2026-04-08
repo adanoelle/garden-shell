@@ -1,6 +1,6 @@
 //! Kakoune editor theme generator.
 //!
-//! Produces a `kak/colors/garden.kak` file that maps Garden's 13
+//! Produces a `kak/garden.kak` file that maps Garden's 13
 //! semantic color roles to kakoune's `face global` declarations using
 //! the `rgb:rrggbb` color format.
 //!
@@ -74,7 +74,7 @@ impl ThemeGenerator for Kakoune {
     }
 
     fn relative_path(&self) -> &str {
-        "kak/colors/garden.kak"
+        "kak/garden.kak"
     }
 
     fn generate(&self, palette: &Palette) -> String {

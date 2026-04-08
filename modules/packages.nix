@@ -41,7 +41,7 @@
             nativeBuildInputs = [ self'.packages.garden-themes ];
           } ''
           garden-themes generate \
-            --palettes ${../_config/palettes.json} \
+            --palettes ${../_config/palettes.toml} \
             --output $out
         '';
 

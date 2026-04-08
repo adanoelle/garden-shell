@@ -1,4 +1,4 @@
-palettes := source_directory() + "/../../_config/palettes.json"
+palettes := source_directory() + "/../../_config/palettes.toml"
 out := "/tmp/garden-themes"
 
 # Show available recipes
@@ -46,18 +46,18 @@ apply-kitty:
 
 # Apply generated fish theme to all sessions
 apply-fish:
-    fish -c "source {{out}}/fish/conf.d/garden-theme.fish"
+    fish -c "source {{out}}/fish/garden-theme.fish"
 
 # Apply generated kakoune theme to all running sessions
 apply-kak:
     for s in $(kak -l); do \
-        echo "source {{out}}/kak/colors/garden.kak" | kak -p "$s"; \
+        echo "source {{out}}/kak/garden.kak" | kak -p "$s"; \
     done
 
 # Generate + apply to kitty, fish, and kakoune
 try palette="": (generate palette)
     kitty @ set-colors {{out}}/kitty/garden-theme.conf
-    fish -c "source {{out}}/fish/conf.d/garden-theme.fish"
+    fish -c "source {{out}}/fish/garden-theme.fish"
     for s in $(kak -l); do \
-        echo "source {{out}}/kak/colors/garden.kak" | kak -p "$s"; \
+        echo "source {{out}}/kak/garden.kak" | kak -p "$s"; \
     done

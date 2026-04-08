@@ -1,13 +1,29 @@
-import QtQuick
+import Quickshell
+import Quickshell.Wayland
+import "bar"
+import "compositor"
+import "services"
 
-Item {
-    id: root
-    visible: true
+/// Garden Shell — root entry point.
+///
+/// Creates a Bar instance for each connected screen. Singletons
+/// (Theme, CompositorService, NiriAdapter, ConfigService, HookService,
+/// ModeService) are auto-loaded by Quickshell from their pragma
+/// Singleton declarations.
+ShellRoot {
+    // Force singleton instantiation — QML singletons are lazy, so we
+    // reference each one to ensure event streams and IPC handlers start.
+    property var _hooks: HookService
+    property var _niri: NiriAdapter
+    property var _config: ConfigService
+    property var _mode: ModeService
 
-    Text {
-        anchors.centerIn: parent
-        text: "Garden Shell (stub)"
-        color: "#d4c5a9"
-        font.pixelSize: 16
+    Variants {
+        model: Quickshell.screens
+
+        Bar {
+            required property var modelData
+            screen: modelData
+        }
     }
 }

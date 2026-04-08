@@ -1,7 +1,23 @@
 {
   "palette": "mokume",
   "bar": {
-    "position": "left",
-    "width": 48
+    "position": "top"
+  },
+  "channels": {
+    "studio": {
+      "modes": ["minimal-bar"]
+    },
+    "research": {
+      "modes": ["full-bar"]
+    },
+    "writing": {
+      "modes": ["standard-bar"]
+    },
+    "music": {
+      "modes": ["minimal-bar"]
+    },
+    "system": {
+      "modes": ["full-bar"]
+    }
   }
 }
