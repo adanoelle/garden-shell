@@ -1,5 +1,5 @@
 # modules/aspects/shell.nix — full desktop shell bundle
-{ garden, ... }:
+{ garden, lib, ... }:
 {
   garden.shell = {
     includes = [
@@ -8,15 +8,26 @@
       garden.toolkit
       garden.daemon
       garden.ctl
+      garden.tui
       garden.observability
     ];
 
     nixos = { pkgs, ... }: {
-      # S1 stub: niri + quickshell
+      # Ensure niri is available system-wide (compositor).
     };
 
-    homeManager = { pkgs, ... }: {
-      # S1 stub: QML shell + niri config + settings
+    homeManager = { config, pkgs, ... }: {
+      # Deploy QML shell files to ~/.config/quickshell/garden/
+      xdg.configFile."quickshell/garden" = {
+        source = ../../_qml;
+        recursive = true;
+      };
+
+      # Deploy settings.json as mutable copy so modes can be edited at runtime.
+      home.activation.gardenSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        install -Dm644 ${../../_config/settings.json} \
+          ${config.xdg.configHome}/garden/settings.json
+      '';
     };
   };
 }
