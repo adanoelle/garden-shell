@@ -1,5 +1,5 @@
 # modules/aspects/shell.nix — full desktop shell bundle
-{ garden, lib, ... }:
+{ garden, ... }:
 {
   garden.shell = {
     includes = [
@@ -16,7 +16,7 @@
       # Ensure niri is available system-wide (compositor).
     };
 
-    homeManager = { config, pkgs, ... }: {
+    homeManager = { config, lib, pkgs, ... }: {
       # Deploy QML shell files to ~/.config/quickshell/garden/
       xdg.configFile."quickshell/garden" = {
         source = ../../_qml;
