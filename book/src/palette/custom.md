@@ -6,37 +6,33 @@
 ## Creating a palette
 
 The easiest way to create a custom palette is to fork an existing one. Copy a
-built-in palette entry in `_config/palettes.json`, give it a new name, and
+built-in palette entry in `_config/palettes.toml`, give it a new name, and
 adjust the colors:
 
-```json
-{
-  "active": "my-palette",
-  "palettes": {
-    "my-palette": {
-      "name": "my-palette",
-      "subtitle": "dark -- custom description",
-      "icon": "◆",
-      "builtin": false,
-      "forked_from": "mokume",
-      "colors": {
-        "base-deep": "#1a1a2e",
-        "base": "#16213e",
-        "base-raised": "#1e2a4a",
-        "base-hl": "#2a3a5a",
-        "border-sub": "#2a3050",
-        "border": "#3a4a6a",
-        "text-4": "#4a5a7a",
-        "text-3": "#6a7a9a",
-        "text-2": "#8a9aba",
-        "text-1": "#d4c8b0",
-        "accent": "#c9b88c",
-        "urgent": "#c4796b",
-        "ok": "#7c9a7c"
-      }
-    }
-  }
-}
+```toml
+active = "my-palette"
+
+[palettes.my-palette]
+name = "my-palette"
+subtitle = "dark -- custom description"
+icon = "◆"
+builtin = false
+forked_from = "mokume"
+
+[palettes.my-palette.colors]
+base-deep = "#1a1a2e"
+base = "#16213e"
+base-raised = "#1e2a4a"
+base-hl = "#2a3a5a"
+border-sub = "#2a3050"
+border = "#3a4a6a"
+text-4 = "#4a5a7a"
+text-3 = "#6a7a9a"
+text-2 = "#8a9aba"
+text-1 = "#d4c8b0"
+accent = "#c9b88c"
+urgent = "#c4796b"
+ok = "#7c9a7c"
 ```
 
 Set `active` to your new palette name, then validate and preview:
@@ -123,33 +119,32 @@ palette.
 
 ## Implementation
 
-### JSON schema
+### TOML schema
 
-The palette object in `palettes.json`:
+The palette entry in `palettes.toml`:
 
-```json
-{
-  "name": "string",
-  "subtitle": "string",
-  "icon": "string (single character)",
-  "builtin": false,
-  "forked_from": "string | null (optional)",
-  "colors": {
-    "base-deep": "#rrggbb",
-    "base": "#rrggbb",
-    "base-raised": "#rrggbb",
-    "base-hl": "#rrggbb",
-    "border-sub": "#rrggbb",
-    "border": "#rrggbb",
-    "text-4": "#rrggbb",
-    "text-3": "#rrggbb",
-    "text-2": "#rrggbb",
-    "text-1": "#rrggbb",
-    "accent": "#rrggbb",
-    "urgent": "#rrggbb",
-    "ok": "#rrggbb"
-  }
-}
+```toml
+[palettes.my-palette]
+name = "my-palette"
+subtitle = "description"
+icon = "◆"
+builtin = false
+forked_from = "mokume"  # optional
+
+[palettes.my-palette.colors]
+base-deep = "#rrggbb"
+base = "#rrggbb"
+base-raised = "#rrggbb"
+base-hl = "#rrggbb"
+border-sub = "#rrggbb"
+border = "#rrggbb"
+text-4 = "#rrggbb"
+text-3 = "#rrggbb"
+text-2 = "#rrggbb"
+text-1 = "#rrggbb"
+accent = "#rrggbb"
+urgent = "#rrggbb"
+ok = "#rrggbb"
 ```
 
 ### Validation internals

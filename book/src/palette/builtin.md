@@ -99,14 +99,11 @@ deliberately neutral.
 
 ### Active selection
 
-The `active` field in `palettes.json` determines which palette generators use
+The `active` field in `palettes.toml` determines which palette generators use
 by default. Change it to switch your base palette:
 
-```json
-{
-  "active": "sumi",
-  "palettes": { ... }
-}
+```toml
+active = "sumi"
 ```
 
 Or override per-invocation without editing the file:
@@ -117,26 +114,21 @@ just themes try yoru
 
 ## Implementation
 
-All four palettes live in `_config/palettes.json` as a `PaletteCollection`:
+All four palettes live in `_config/palettes.toml` as a `PaletteCollection`:
 
-```json
-{
-  "active": "mokume",
-  "palettes": {
-    "mokume": {
-      "name": "mokume",
-      "subtitle": "dark -- hague blue x warm cream",
-      "icon": "◐",
-      "builtin": true,
-      "colors": {
-        "base-deep": "#252d3b",
-        "base": "#2c3444",
-        ...
-      }
-    },
-    ...
-  }
-}
+```toml
+active = "mokume"
+
+[palettes.mokume]
+name = "mokume"
+subtitle = "dark -- hague blue x warm cream"
+icon = "◐"
+builtin = true
+
+[palettes.mokume.colors]
+base-deep = "#252d3b"
+base = "#2c3444"
+# ...
 ```
 
 The `PaletteCollection` struct mirrors this shape:

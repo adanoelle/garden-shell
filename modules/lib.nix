@@ -3,7 +3,7 @@
 {
   flake.lib.palette =
     let
-      raw = builtins.fromJSON (builtins.readFile ../_config/palettes.json);
+      raw = builtins.fromTOML (builtins.readFile ../_config/palettes.toml);
       active = raw.palettes.${raw.active};
     in
     {

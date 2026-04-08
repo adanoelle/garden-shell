@@ -90,7 +90,7 @@ pub enum ColorRole {
 ```
 
 Each variant serializes to kebab-case (`BaseDeep` ↔ `"base-deep"`) to match the
-keys in `palettes.json`.
+keys in `palettes.toml`.
 
 Colors are stored as validated `HexColor` values — exactly 7 ASCII characters
 (`#` + 6 hex digits), normalized to lowercase on construction:
