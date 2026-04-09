@@ -1,4 +1,46 @@
-active = "mokume"
+active = "sumi"
+
+[palettes.fuji]
+name = "fuji"
+subtitle = "dark -- brinjal x peignoir cream"
+icon = "◕"
+builtin = true
+
+[palettes.fuji.colors]
+base-deep = "#282028"
+base = "#302830"
+base-raised = "#383038"
+base-hl = "#423a42"
+border-sub = "#403840"
+border = "#524a52"
+text-4 = "#5e5460"
+text-3 = "#786c7a"
+text-2 = "#988c96"
+text-1 = "#d4c4bc"
+accent = "#c4a878"
+urgent = "#c47068"
+ok = "#7c9a74"
+
+[palettes.ishi]
+name = "ishi"
+subtitle = "light -- purbeck stone x warm charcoal"
+icon = "◌"
+builtin = true
+
+[palettes.ishi.colors]
+base-deep = "#d0ccc6"
+base = "#dbd8d2"
+base-raised = "#e6e4de"
+base-hl = "#cac6c0"
+border-sub = "#c2beb6"
+border = "#b2aea6"
+text-4 = "#96928c"
+text-3 = "#7c7872"
+text-2 = "#56524e"
+text-1 = "#2c2a28"
+accent = "#887640"
+urgent = "#a05848"
+ok = "#587a4c"
 
 [palettes.kinu]
 name = "kinu"
@@ -42,6 +84,27 @@ accent = "#c9b88c"
 urgent = "#c4796b"
 ok = "#7c9a7c"
 
+[palettes.sugi]
+name = "sugi"
+subtitle = "dark -- studio green x warm sand"
+icon = "◒"
+builtin = true
+
+[palettes.sugi.colors]
+base-deep = "#1e2822"
+base = "#263028"
+base-raised = "#2e3830"
+base-hl = "#384238"
+border-sub = "#354038"
+border = "#465044"
+text-4 = "#546854"
+text-3 = "#6a7c68"
+text-2 = "#8e9a84"
+text-1 = "#d4c8a0"
+accent = "#c4b070"
+urgent = "#c07058"
+ok = "#8aa060"
+
 [palettes.sumi]
 name = "sumi"
 subtitle = "neutral -- charcoal ink x amber"
@@ -62,6 +125,27 @@ text-1 = "#d4c4a0"
 accent = "#c2a86a"
 urgent = "#bf7565"
 ok = "#7a9470"
+
+[palettes.tsuchi]
+name = "tsuchi"
+subtitle = "dark -- london clay x parchment"
+icon = "◓"
+builtin = true
+
+[palettes.tsuchi.colors]
+base-deep = "#281a16"
+base = "#30221e"
+base-raised = "#382a26"
+base-hl = "#42342e"
+border-sub = "#40322c"
+border = "#524438"
+text-4 = "#645444"
+text-3 = "#7e6852"
+text-2 = "#a08a6a"
+text-1 = "#d8c098"
+accent = "#c4a058"
+urgent = "#c46040"
+ok = "#7a9450"
 
 [palettes.yoru]
 name = "yoru"

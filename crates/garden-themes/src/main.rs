@@ -201,9 +201,7 @@ fn cmd_apply(palettes_path: Option<&Path>, name: Option<&str>) -> Result<()> {
                     .map_err(|e| anyhow::anyhow!(e))
                     .context("failed to serialize palettes")?;
                 fs::write(&palettes_file, format!("{toml_out}\n"))
-                    .with_context(|| {
-                        format!("failed to write {}", palettes_file.display())
-                    })?;
+                    .with_context(|| format!("failed to write {}", palettes_file.display()))?;
                 println!("  active palette → \"{n}\"");
             }
             n.to_string()
@@ -256,6 +254,7 @@ fn cmd_apply(palettes_path: Option<&Path>, name: Option<&str>) -> Result<()> {
     reload_kitty(&themes_dir);
     reload_fish(&themes_dir);
     reload_kakoune(&themes_dir);
+    reload_niri();
 
     Ok(())
 }
@@ -489,5 +488,25 @@ fn reload_kakoune(themes_dir: &Path) {
 
     if reloaded > 0 {
         println!("  reloaded {reloaded} kakoune session(s)");
+    }
+}
+
+/// Triggers a smooth screen transition in niri.
+///
+/// Niri live-reloads its config when included files change, so the new
+/// border/background colors take effect automatically. The screen
+/// transition wraps the visual change so it looks intentional rather
+/// than abrupt.
+fn reload_niri() {
+    // Check if niri is running by attempting the IPC command.
+    let status = Command::new("niri")
+        .args(["msg", "action", "do-screen-transition"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status();
+
+    if matches!(status, Ok(s) if s.success()) {
+        println!("  triggered niri screen transition");
     }
 }

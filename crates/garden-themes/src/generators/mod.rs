@@ -7,11 +7,18 @@
 //!
 //! # Built-in generators
 //!
-//! | Generator | Output file                          | Format                |
-//! |-----------|--------------------------------------|-----------------------|
-//! | [`Kitty`]   | `kitty/garden-theme.conf`            | Kitty color conf      |
-//! | [`Fish`]    | `fish/garden-theme.fish`             | Fish universal vars   |
-//! | [`Kakoune`] | `kak/garden.kak`                     | Kakoune face decls    |
+//! | Generator   | Output file                 | Format                |
+//! |-------------|-----------------------------|-----------------------|
+//! | [`Kitty`]   | `kitty/garden-theme.conf`   | Kitty color conf      |
+//! | [`Fish`]    | `fish/garden-theme.fish`    | Fish universal vars   |
+//! | [`Kakoune`] | `kak/garden.kak`            | Kakoune face decls    |
+//! | [`Fzf`]     | `fzf/garden-theme.fish`     | Fish FZF_DEFAULT_OPTS |
+//! | [`Bat`]     | `bat/garden.tmTheme`        | tmTheme XML plist     |
+//! | [`Lazygit`] | `lazygit/garden.yml`        | YAML theme block      |
+//! | [`Btop`]    | `btop/garden.theme`         | key=value theme       |
+//! | [`Yazi`]    | `yazi/garden-theme.toml`    | TOML theme            |
+//! | [`Zathura`] | `zathura/gardenrc`          | zathurarc set cmds    |
+//! | [`Niri`]    | `niri/garden-colors.kdl`    | KDL include fragment  |
 //!
 //! # Adding a new generator
 //!
@@ -34,10 +41,16 @@
 //! }
 //! ```
 
+pub mod bat;
+pub mod btop;
 pub mod fish;
 pub mod fzf;
 pub mod kakoune;
 pub mod kitty;
+pub mod lazygit;
+pub mod niri;
+pub mod yazi;
+pub mod zathura;
 
 use garden_core::Palette;
 
@@ -74,5 +87,11 @@ pub fn all() -> Vec<Box<dyn ThemeGenerator>> {
         Box::new(fish::Fish),
         Box::new(kakoune::Kakoune),
         Box::new(fzf::Fzf),
+        Box::new(bat::Bat),
+        Box::new(lazygit::Lazygit),
+        Box::new(btop::Btop),
+        Box::new(yazi::Yazi),
+        Box::new(zathura::Zathura),
+        Box::new(niri::Niri),
     ]
 }

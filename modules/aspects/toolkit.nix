@@ -1,5 +1,5 @@
 # modules/aspects/toolkit.nix — CLI tool suite
-{ garden, ... }:
+{ garden, self, ... }:
 {
   garden.toolkit = {
     includes = [ garden.palette ];
@@ -8,8 +8,10 @@
       # S1 stub: system-level CLI tools
     };
 
-    homeManager = { ... }: {
-      # TODO: add garden-themes to home.packages once overlay is defined
+    homeManager = { pkgs, ... }: {
+      home.packages = [
+        self.packages.${pkgs.system}.garden-themes
+      ];
     };
   };
 }

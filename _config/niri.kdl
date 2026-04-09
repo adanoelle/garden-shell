@@ -29,8 +29,8 @@ layout {
     focus-ring { off; }
     border {
         width 1
-        active-color "#4a5568"
-        inactive-color "#3a4456"
+        active-color "#4a5568"   // palette.border (mokume)
+        inactive-color "#3a4456" // palette.border-sub (mokume)
     }
     default-column-width { proportion 0.500000; }
     preset-column-widths {
@@ -129,15 +129,15 @@ window-rule {
     match title="frontier"
     match title="andes"
     match title="summit"
-    border { active-color "#c4796b"; }
+    border { active-color "#c4796b"; } // palette.urgent (mokume)
 }
 window-rule {
     match title="dgx-"
-    border { active-color "#c9b88c"; }
+    border { active-color "#c9b88c"; } // palette.accent (mokume)
 }
 window-rule {
     match title="homelab"
-    border { active-color "#7c9a7c"; }
+    border { active-color "#7c9a7c"; } // palette.ok (mokume)
 }
 animations {
     config-notification-open-close {

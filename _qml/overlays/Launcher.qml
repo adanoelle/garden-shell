@@ -62,6 +62,15 @@ PanelWindow {
         hideAnim.start();
     }
 
+    function _closeInstant() {
+        if (!_open) return;
+        hideAnim.stop();
+        content.opacity = 0;
+        contentSlide.y = 20;
+        launcher._open = false;
+        launcher.visible = false;
+    }
+
     // ── Animations ────────────────────────────────────────────────────
 
     ParallelAnimation {
@@ -361,8 +370,8 @@ PanelWindow {
             _close();
             break;
         case "palette":
+            _closeInstant();
             Theme.switchPalette(result._target);
-            _close();
             break;
         case "calc":
             _clipProcess.command = ["wl-copy", "--", result._target];

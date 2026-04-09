@@ -24,6 +24,9 @@ Singleton {
     /// Debounce timer for focus changes to prevent flicker.
     property int _pendingFocusWorkspace: -1
 
+    /// Whether niri's built-in overview (Super+A) is currently open.
+    property bool overviewOpen: false
+
     // ── Public API ──────────────────────────────────────────────────
 
     function focusWorkspace(name: string) {
@@ -106,6 +109,9 @@ Singleton {
             break;
         case "WindowFocusChanged":
             _handleWindowFocusChanged(data);
+            break;
+        case "OverviewOpenedOrClosed":
+            root.overviewOpen = !!data.is_open;
             break;
         }
     }

@@ -14,7 +14,10 @@ const PALETTES_TOML: &str = include_str!("../../../_config/palettes.toml");
 fn active_collection() -> PaletteCollection {
     let col = PaletteCollection::from_toml(PALETTES_TOML).unwrap();
     col.validate().unwrap();
-    assert!(col.active_palette().is_some(), "active palette should exist");
+    assert!(
+        col.active_palette().is_some(),
+        "active palette should exist"
+    );
     col
 }
 
@@ -190,8 +193,14 @@ fn kakoune_output_contains_palette_colors() {
     assert!(output.contains(&format!("Default            rgb:{text2},rgb:{base}")));
     assert!(output.contains(&format!("Error              rgb:{urgent},rgb:{base}")));
     assert!(output.contains(&format!("value              rgb:{accent}")));
-    assert!(output.contains(&format!("string             rgb:{}", palette.color(ColorRole::Ok).unwrap().bare())));
-    assert!(output.contains(&format!("comment            rgb:{}+i", palette.color(ColorRole::Text4).unwrap().bare())));
+    assert!(output.contains(&format!(
+        "string             rgb:{}",
+        palette.color(ColorRole::Ok).unwrap().bare()
+    )));
+    assert!(output.contains(&format!(
+        "comment            rgb:{}+i",
+        palette.color(ColorRole::Text4).unwrap().bare()
+    )));
 }
 
 #[test]
@@ -210,7 +219,10 @@ fn kakoune_output_uses_rgb_format() {
             );
         }
     }
-    assert!(output.contains("rgb:"), "kakoune output should use rgb: format");
+    assert!(
+        output.contains("rgb:"),
+        "kakoune output should use rgb: format"
+    );
 }
 
 #[test]
@@ -267,17 +279,550 @@ fn kakoune_relative_path() {
     assert_eq!(kak.relative_path(), "kak/garden.kak");
 }
 
+// ── fzf ──────────────────────────────────────────────────────────────
+
+#[test]
+fn fzf_output_contains_header() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let fzf = generators::fzf::Fzf;
+    let output = fzf.generate(palette);
+
+    assert!(output.contains("Garden theme"));
+    assert!(output.contains(&col.active));
+    assert!(output.contains("Do not edit by hand"));
+}
+
+#[test]
+fn fzf_output_contains_palette_colors() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let fzf = generators::fzf::Fzf;
+    let output = fzf.generate(palette);
+
+    let base = palette.color(ColorRole::Base).unwrap().as_str();
+    let base_hl = palette.color(ColorRole::BaseHl).unwrap().as_str();
+    let accent = palette.color(ColorRole::Accent).unwrap().as_str();
+    let urgent = palette.color(ColorRole::Urgent).unwrap().as_str();
+
+    assert!(output.contains(&format!("bg:{base}")));
+    assert!(output.contains(&format!("bg+:{base_hl}")));
+    assert!(output.contains(&format!("prompt:{accent}")));
+    assert!(output.contains(&format!("hl:{urgent}")));
+}
+
+#[test]
+fn fzf_output_sets_fzf_default_opts() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let fzf = generators::fzf::Fzf;
+    let output = fzf.generate(palette);
+
+    assert!(
+        output.contains("FZF_DEFAULT_OPTS"),
+        "should set FZF_DEFAULT_OPTS"
+    );
+    assert!(output.contains("--color="), "should use fzf --color flag");
+}
+
+#[test]
+fn fzf_relative_path() {
+    let fzf = generators::fzf::Fzf;
+    assert_eq!(fzf.relative_path(), "fzf/garden-theme.fish");
+}
+
+// ── bat ──────────────────────────────────────────────────────────────
+
+#[test]
+fn bat_output_contains_header() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let bat = generators::bat::Bat;
+    let output = bat.generate(palette);
+
+    assert!(output.contains("Garden theme"));
+    assert!(output.contains(&col.active));
+    assert!(output.contains("Do not edit by hand"));
+}
+
+#[test]
+fn bat_output_is_valid_xml_structure() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let bat = generators::bat::Bat;
+    let output = bat.generate(palette);
+
+    assert!(output.contains("<?xml version"));
+    assert!(output.contains("<plist version=\"1.0\">"));
+    assert!(output.contains("</plist>"));
+    assert!(output.contains("<key>settings</key>"));
+}
+
+#[test]
+fn bat_output_contains_palette_colors() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let bat = generators::bat::Bat;
+    let output = bat.generate(palette);
+
+    let base = palette.color(ColorRole::Base).unwrap().as_str();
+    let text2 = palette.color(ColorRole::Text2).unwrap().as_str();
+    let text1 = palette.color(ColorRole::Text1).unwrap().as_str();
+    let ok = palette.color(ColorRole::Ok).unwrap().as_str();
+    let urgent = palette.color(ColorRole::Urgent).unwrap().as_str();
+
+    // Global settings
+    assert!(
+        output.contains(&format!("<string>{base}</string>")),
+        "missing background"
+    );
+    assert!(
+        output.contains(&format!("<string>{text2}</string>")),
+        "missing foreground"
+    );
+    assert!(
+        output.contains(&format!("<string>{text1}</string>")),
+        "missing caret"
+    );
+
+    // Scope colors
+    assert!(
+        output.contains(&format!("<string>{ok}</string>")),
+        "missing string/ok color"
+    );
+    assert!(
+        output.contains(&format!("<string>{urgent}</string>")),
+        "missing invalid/urgent color"
+    );
+}
+
+#[test]
+fn bat_output_has_expected_scopes() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let bat = generators::bat::Bat;
+    let output = bat.generate(palette);
+
+    let expected_scopes = [
+        "comment",
+        "string",
+        "constant",
+        "keyword",
+        "storage",
+        "entity.name.function",
+        "variable",
+        "entity.name.type, support.type",
+        "entity.name.tag",
+        "entity.other.attribute-name",
+        "punctuation",
+        "markup.heading, entity.name.section",
+        "markup.underline.link",
+        "invalid",
+        "meta.preprocessor",
+    ];
+
+    for scope in expected_scopes {
+        assert!(
+            output.contains(&format!("<string>{scope}</string>")),
+            "missing scope: {scope}"
+        );
+    }
+}
+
+#[test]
+fn bat_relative_path() {
+    let bat = generators::bat::Bat;
+    assert_eq!(bat.relative_path(), "bat/garden.tmTheme");
+}
+
+// ── lazygit ──────────────────────────────────────────────────────────
+
+#[test]
+fn lazygit_output_contains_header() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let lg = generators::lazygit::Lazygit;
+    let output = lg.generate(palette);
+
+    assert!(output.contains("Garden theme"));
+    assert!(output.contains(&col.active));
+    assert!(output.contains("Do not edit by hand"));
+}
+
+#[test]
+fn lazygit_output_contains_palette_colors() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let lg = generators::lazygit::Lazygit;
+    let output = lg.generate(palette);
+
+    let accent = palette.color(ColorRole::Accent).unwrap().as_str();
+    let border = palette.color(ColorRole::Border).unwrap().as_str();
+    let base_hl = palette.color(ColorRole::BaseHl).unwrap().as_str();
+    let urgent = palette.color(ColorRole::Urgent).unwrap().as_str();
+    let text2 = palette.color(ColorRole::Text2).unwrap().as_str();
+
+    assert!(output.contains(accent), "missing accent color");
+    assert!(output.contains(border), "missing border color");
+    assert!(output.contains(base_hl), "missing base-hl color");
+    assert!(output.contains(urgent), "missing urgent color");
+    assert!(output.contains(text2), "missing text-2 color");
+}
+
+#[test]
+fn lazygit_output_has_expected_keys() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let lg = generators::lazygit::Lazygit;
+    let output = lg.generate(palette);
+
+    let expected_keys = [
+        "activeBorderColor:",
+        "inactiveBorderColor:",
+        "searchingActiveBorderColor:",
+        "optionsTextColor:",
+        "selectedLineBgColor:",
+        "cherryPickedCommitFgColor:",
+        "cherryPickedCommitBgColor:",
+        "unstagedChangesColor:",
+        "defaultFgColor:",
+    ];
+
+    for key in expected_keys {
+        assert!(output.contains(key), "missing lazygit key: {key}");
+    }
+}
+
+#[test]
+fn lazygit_output_is_yaml_structure() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let lg = generators::lazygit::Lazygit;
+    let output = lg.generate(palette);
+
+    assert!(output.contains("gui:"));
+    assert!(output.contains("  theme:"));
+}
+
+#[test]
+fn lazygit_relative_path() {
+    let lg = generators::lazygit::Lazygit;
+    assert_eq!(lg.relative_path(), "lazygit/garden.yml");
+}
+
+// ── btop ─────────────────────────────────────────────────────────────
+
+#[test]
+fn btop_output_contains_header() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let btop = generators::btop::Btop;
+    let output = btop.generate(palette);
+
+    assert!(output.contains("Garden theme"));
+    assert!(output.contains(&col.active));
+    assert!(output.contains("Do not edit by hand"));
+}
+
+#[test]
+fn btop_output_contains_palette_colors() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let btop = generators::btop::Btop;
+    let output = btop.generate(palette);
+
+    let base = palette.color(ColorRole::Base).unwrap().as_str();
+    let text1 = palette.color(ColorRole::Text1).unwrap().as_str();
+    let text2 = palette.color(ColorRole::Text2).unwrap().as_str();
+    let accent = palette.color(ColorRole::Accent).unwrap().as_str();
+
+    assert!(output.contains(&format!("theme[main_bg]=\"{base}\"")));
+    assert!(output.contains(&format!("theme[main_fg]=\"{text2}\"")));
+    assert!(output.contains(&format!("theme[title]=\"{text1}\"")));
+    assert!(output.contains(&format!("theme[hi_fg]=\"{accent}\"")));
+}
+
+#[test]
+fn btop_output_has_expected_keys() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let btop = generators::btop::Btop;
+    let output = btop.generate(palette);
+
+    let expected_keys = [
+        "theme[main_bg]",
+        "theme[main_fg]",
+        "theme[title]",
+        "theme[hi_fg]",
+        "theme[selected_bg]",
+        "theme[selected_fg]",
+        "theme[inactive_fg]",
+        "theme[cpu_box]",
+        "theme[mem_box]",
+        "theme[net_box]",
+        "theme[proc_box]",
+        "theme[div_line]",
+        "theme[cpu_start]",
+        "theme[cpu_mid]",
+        "theme[cpu_end]",
+    ];
+
+    for key in expected_keys {
+        assert!(output.contains(key), "missing btop key: {key}");
+    }
+}
+
+#[test]
+fn btop_relative_path() {
+    let btop = generators::btop::Btop;
+    assert_eq!(btop.relative_path(), "btop/garden.theme");
+}
+
+// ── yazi ─────────────────────────────────────────────────────────────
+
+#[test]
+fn yazi_output_contains_header() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let yazi = generators::yazi::Yazi;
+    let output = yazi.generate(palette);
+
+    assert!(output.contains("Garden theme"));
+    assert!(output.contains(&col.active));
+    assert!(output.contains("Do not edit by hand"));
+}
+
+#[test]
+fn yazi_output_contains_palette_colors() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let yazi = generators::yazi::Yazi;
+    let output = yazi.generate(palette);
+
+    let accent = palette.color(ColorRole::Accent).unwrap().as_str();
+    let base_hl = palette.color(ColorRole::BaseHl).unwrap().as_str();
+    let border = palette.color(ColorRole::Border).unwrap().as_str();
+
+    assert!(output.contains(accent), "missing accent color");
+    assert!(output.contains(base_hl), "missing base-hl color");
+    assert!(output.contains(border), "missing border color");
+}
+
+#[test]
+fn yazi_output_has_expected_sections() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let yazi = generators::yazi::Yazi;
+    let output = yazi.generate(palette);
+
+    assert!(output.contains("[manager]"), "missing [manager] section");
+    assert!(output.contains("[status]"), "missing [status] section");
+    assert!(output.contains("[select]"), "missing [select] section");
+    assert!(output.contains("[input]"), "missing [input] section");
+}
+
+#[test]
+fn yazi_output_has_expected_keys() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let yazi = generators::yazi::Yazi;
+    let output = yazi.generate(palette);
+
+    let expected_keys = [
+        "cwd",
+        "hovered",
+        "tab_active",
+        "tab_inactive",
+        "marker_selected",
+        "marker_copied",
+        "marker_cut",
+        "mode_normal",
+        "mode_select",
+        "separator_style",
+    ];
+
+    for key in expected_keys {
+        assert!(output.contains(key), "missing yazi key: {key}");
+    }
+}
+
+#[test]
+fn yazi_relative_path() {
+    let yazi = generators::yazi::Yazi;
+    assert_eq!(yazi.relative_path(), "yazi/garden-theme.toml");
+}
+
+// ── zathura ──────────────────────────────────────────────────────────
+
+#[test]
+fn zathura_output_contains_header() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let zathura = generators::zathura::Zathura;
+    let output = zathura.generate(palette);
+
+    assert!(output.contains("Garden theme"));
+    assert!(output.contains(&col.active));
+    assert!(output.contains("Do not edit by hand"));
+}
+
+#[test]
+fn zathura_output_contains_palette_colors() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let zathura = generators::zathura::Zathura;
+    let output = zathura.generate(palette);
+
+    let base = palette.color(ColorRole::Base).unwrap().as_str();
+    let text1 = palette.color(ColorRole::Text1).unwrap().as_str();
+    let text2 = palette.color(ColorRole::Text2).unwrap().as_str();
+    let accent = palette.color(ColorRole::Accent).unwrap().as_str();
+
+    assert!(output.contains(&format!("set default-bg \"{base}\"")));
+    assert!(output.contains(&format!("set default-fg \"{text2}\"")));
+    assert!(output.contains(&format!("set recolor-darkcolor \"{text1}\"")));
+    assert!(output.contains(&format!("set highlight-active-color \"{accent}\"")));
+}
+
+#[test]
+fn zathura_output_has_expected_keys() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let zathura = generators::zathura::Zathura;
+    let output = zathura.generate(palette);
+
+    let expected_keys = [
+        "set default-fg",
+        "set default-bg",
+        "set statusbar-fg",
+        "set statusbar-bg",
+        "set inputbar-fg",
+        "set inputbar-bg",
+        "set highlight-color",
+        "set highlight-active-color",
+        "set recolor-lightcolor",
+        "set recolor-darkcolor",
+        "set recolor true",
+        "set index-fg",
+        "set index-active-fg",
+    ];
+
+    for key in expected_keys {
+        assert!(output.contains(key), "missing zathura key: {key}");
+    }
+}
+
+#[test]
+fn zathura_output_uses_set_format() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let zathura = generators::zathura::Zathura;
+    let output = zathura.generate(palette);
+
+    // Non-comment, non-empty lines should start with "set "
+    for line in output.lines() {
+        if !line.is_empty() && !line.starts_with('#') {
+            assert!(
+                line.starts_with("set "),
+                "non-comment line should start with 'set ': {line}"
+            );
+        }
+    }
+}
+
+#[test]
+fn zathura_relative_path() {
+    let zathura = generators::zathura::Zathura;
+    assert_eq!(zathura.relative_path(), "zathura/gardenrc");
+}
+
+// ── niri ─────────────────────────────────────────────────────────────
+
+#[test]
+fn niri_output_contains_header() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let niri = generators::niri::Niri;
+    let output = niri.generate(palette);
+
+    assert!(output.contains("Garden theme"));
+    assert!(output.contains(&col.active));
+    assert!(output.contains("Do not edit by hand"));
+}
+
+#[test]
+fn niri_output_contains_palette_colors() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let niri = generators::niri::Niri;
+    let output = niri.generate(palette);
+
+    let base_deep = palette.color(ColorRole::BaseDeep).unwrap().as_str();
+    let urgent = palette.color(ColorRole::Urgent).unwrap().as_str();
+    let accent = palette.color(ColorRole::Accent).unwrap().as_str();
+    let ok = palette.color(ColorRole::Ok).unwrap().as_str();
+
+    assert!(
+        output.contains(&format!("background-color \"{base_deep}\"")),
+        "missing background-color"
+    );
+    assert!(output.contains(urgent), "missing urgent color");
+    assert!(output.contains(accent), "missing accent color");
+    assert!(output.contains(ok), "missing ok color");
+}
+
+#[test]
+fn niri_output_has_expected_structure() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let niri = generators::niri::Niri;
+    let output = niri.generate(palette);
+
+    assert!(output.contains("background-color"), "missing background-color");
+    assert!(!output.contains("layout {"), "layout block should not be in include");
+    assert!(output.contains("window-rule {"), "missing window-rule block");
+    assert!(
+        output.contains("match title=\"frontier\""),
+        "missing HPC window rule"
+    );
+    assert!(
+        output.contains("match title=\"dgx-\""),
+        "missing GPU window rule"
+    );
+    assert!(
+        output.contains("match title=\"homelab\""),
+        "missing homelab window rule"
+    );
+}
+
+#[test]
+fn niri_relative_path() {
+    let niri = generators::niri::Niri;
+    assert_eq!(niri.relative_path(), "niri/garden-colors.kdl");
+}
+
 // ── Registry ──────────────────────────────────────────────────────────
 
 #[test]
 fn all_generators_registered() {
     let gens = generators::all();
-    assert_eq!(gens.len(), 3, "expected kitty + fish + kakoune generators");
+    assert_eq!(
+        gens.len(),
+        10,
+        "expected kitty + fish + kakoune + fzf + bat + lazygit + btop + yazi + zathura + niri"
+    );
 
     let names: Vec<&str> = gens.iter().map(|g| g.name()).collect();
     assert!(names.contains(&"kitty"));
     assert!(names.contains(&"fish"));
     assert!(names.contains(&"kakoune"));
+    assert!(names.contains(&"fzf"));
+    assert!(names.contains(&"bat"));
+    assert!(names.contains(&"lazygit"));
+    assert!(names.contains(&"btop"));
+    assert!(names.contains(&"yazi"));
+    assert!(names.contains(&"zathura"));
+    assert!(names.contains(&"niri"));
 }
 
 #[test]
