@@ -37,7 +37,7 @@ SEMANTIC (3):
 
 ---
 
-## 2. Four Built-In Palettes
+## 2. Built-In Palettes
 
 ### Mokume ◐ (dark — hague blue × warm cream)
 Default. Cool blue-slate base with warm cream text.

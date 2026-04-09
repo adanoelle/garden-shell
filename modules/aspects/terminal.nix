@@ -34,11 +34,13 @@
             source ${themesDir}/fzf/garden-theme.fish
           end
 
-          # bat: symlink tmTheme and rebuild cache if needed
+          # bat: symlink tmTheme and rebuild cache when theme changes.
+          # Compare mtime so a palette switch triggers a cache rebuild.
           if test -f ${themesDir}/bat/garden.tmTheme
             mkdir -p ~/.config/bat/themes
             ln -sf ${themesDir}/bat/garden.tmTheme ~/.config/bat/themes/garden.tmTheme
             if not test -f ~/.cache/bat/themes.bin
+              or test ${themesDir}/bat/garden.tmTheme -nt ~/.cache/bat/themes.bin
               bat cache --build 2>/dev/null
             end
           end

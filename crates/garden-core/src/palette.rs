@@ -23,14 +23,18 @@
 //!
 //! # Built-in palettes
 //!
-//! Garden ships with four palettes inspired by Japanese craft traditions:
+//! Garden ships with eight palettes inspired by Japanese craft traditions:
 //!
-//! | Name   | Icon | Character                       |
-//! |--------|------|---------------------------------|
-//! | mokume | ◐    | Dark — hague blue × warm cream  |
-//! | sumi   | ●    | Neutral — charcoal ink × amber  |
-//! | kinu   | ○    | Light — raw silk × dark walnut  |
-//! | yoru   | ◑    | Night — no blue light × amber   |
+//! | Name   | Icon | Character                              |
+//! |--------|------|----------------------------------------|
+//! | fuji   | ◕    | Dark — brinjal × peignoir cream        |
+//! | ishi   | ◌    | Light — purbeck stone × warm charcoal  |
+//! | kinu   | ○    | Light — raw silk × dark walnut         |
+//! | mokume | ◐    | Dark — hague blue × warm cream         |
+//! | sugi   | ◒    | Dark — studio green × warm sand        |
+//! | sumi   | ●    | Neutral — charcoal ink × amber         |
+//! | tsuchi | ◓    | Dark — london clay × parchment         |
+//! | yoru   | ◑    | Night — no blue light × amber          |
 //!
 //! # Pipeline
 //!

@@ -12,7 +12,7 @@ import "services"
 /// via FileView with watchChanges. When `garden-themes apply` runs,
 /// the cache is regenerated and all color properties update reactively.
 ///
-/// Default values are mokume so the shell works before first apply.
+/// Default values are sumi so the shell works before first apply.
 Singleton {
     id: root
 
@@ -22,33 +22,33 @@ Singleton {
 
     // ── Surface colors ──────────────────────────────────────────────
 
-    property color baseDeep:   "#252d3b"
-    property color base:       "#2c3444"
-    property color baseRaised: "#343d4f"
-    property color baseHl:     "#3d4759"
+    property color baseDeep:   "#222222"
+    property color base:       "#282828"
+    property color baseRaised: "#313131"
+    property color baseHl:     "#3a3a3a"
 
     // ── Border colors ───────────────────────────────────────────────
 
-    property color borderSub:  "#3a4456"
-    property color border:     "#4a5568"
+    property color borderSub:  "#383838"
+    property color border:     "#484848"
 
     // ── Text hierarchy ──────────────────────────────────────────────
 
-    property color text4:      "#505e70"
-    property color text3:      "#6b7a8d"
-    property color text2:      "#8b9bb0"
-    property color text1:      "#d4c5a9"
+    property color text4:      "#545450"
+    property color text3:      "#706f68"
+    property color text2:      "#9a9a8e"
+    property color text1:      "#d4c4a0"
 
     // ── Semantic colors ─────────────────────────────────────────────
 
-    property color accent:     "#c9b88c"
-    property color urgent:     "#c4796b"
-    property color ok:         "#7c9a7c"
+    property color accent:     "#c2a86a"
+    property color urgent:     "#bf7565"
+    property color ok:         "#7a9470"
 
     // ── Palette metadata ────────────────────────────────────────────
 
-    property string activePalette: "mokume"
-    property string paletteIcon:   "◐"
+    property string activePalette: "sumi"
+    property string paletteIcon:   "●"
     property var paletteNames:     []
 
     // ── Fonts ───────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ Singleton {
             return;
         }
 
-        const activeName = data.active || "mokume";
+        const activeName = data.active || "sumi";
         const palette = data.palettes?.[activeName];
         if (!palette) {
             console.warn("Theme: active palette", activeName, "not found in cache");

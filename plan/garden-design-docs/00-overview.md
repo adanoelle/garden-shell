@@ -25,7 +25,7 @@ garden-design-docs/
 │   → feeds: quickshell repo
 │
 ├── 03-palette-and-theming.md
-│   Color system, four palettes, custom palettes, typography,
+│   Color system, built-in palettes, custom palettes, typography,
 │   animation system, app theming strategy, generator pipeline
 │   → feeds: quickshell repo + infrastructure repo (TUI theming)
 │

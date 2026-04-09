@@ -432,8 +432,10 @@ fn reload_fish(themes_dir: &Path) {
         return;
     }
 
+    // Escape single quotes for the fish -c shell string.
+    let escaped = theme_file.display().to_string().replace('\'', "\\'");
     let status = Command::new("fish")
-        .args(["-c", &format!("source '{}'", theme_file.display())])
+        .args(["-c", &format!("source '{escaped}'")])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -493,10 +495,13 @@ fn reload_kakoune(themes_dir: &Path) {
 
 /// Triggers a smooth screen transition in niri.
 ///
-/// Niri live-reloads its config when included files change, so the new
-/// border/background colors take effect automatically. The screen
-/// transition wraps the visual change so it looks intentional rather
-/// than abrupt.
+/// Niri (as of 25.05) does **not** support include directives or
+/// runtime color IPC — border/background colors are set at Nix eval
+/// time via `programs.niri.settings` and only change on
+/// `nixos-rebuild switch`. This transition is purely cosmetic: it
+/// signals the palette-switch moment so the user sees a brief fade
+/// even though niri's own colors remain unchanged until the next
+/// rebuild.
 fn reload_niri() {
     // Check if niri is running by attempting the IPC command.
     let status = Command::new("niri")

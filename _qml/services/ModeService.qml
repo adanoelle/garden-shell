@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
+import "."
 import "../compositor"
 
 /// Per-channel mode management.
