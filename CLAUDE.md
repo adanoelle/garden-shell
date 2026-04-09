@@ -68,3 +68,33 @@ nix develop          # Enter dev shell
 2. **ALWAYS** run `cargo build` after modifying Rust code
 3. **NEVER** modify Cargo.lock manually -- use `cargo update`
 4. Format with `nixpkgs-fmt` and `cargo fmt` before committing
+
+## Integration Rules
+
+When adding theme/config integration with a new tool:
+
+1. **Verify the target app supports the mechanism first.** Before writing any
+   integration code (include directives, source commands, IPC calls), test that
+   the app actually supports it. For example, run `<app> validate` on a minimal
+   config with the proposed directive.
+
+2. **Never replace a Home Manager symlink with a mutable file.** If HM manages
+   `~/.config/foo/config`, treat it as read-only. Mutable content injection
+   requires the app to support `include`/`source` directives, env vars, IPC, or
+   XDG override dirs.
+
+3. **Test one thing at a time.** Validate each approach independently before
+   moving on. Don't stack untested workarounds.
+
+4. **When something doesn't work, reassess the premise.** If the first approach
+   fails, stop and ask whether the feature is actually supported rather than
+   trying increasingly creative workarounds. Accepting a trade-off (e.g. "this
+   app's colors only change on `nixos-rebuild switch`") is better than breaking
+   the config.
+
+### Niri-specific
+
+Niri (as of 25.05) does **not** support `include` directives or runtime color
+IPC. Niri colors are set at Nix eval time via `programs.niri.settings` in fern
+and only change on `nixos-rebuild switch`. The `garden-themes` niri generator
+exists as reference output only.
