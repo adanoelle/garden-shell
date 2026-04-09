@@ -32,4 +32,5 @@ ShellRoot {
     // Overlays (hidden until toggled via IPC).
     Launcher {}
     ChannelSwitcher {}
+    Settings {}
 }

@@ -20,6 +20,7 @@ Singleton {
     signal paletteChanged(string name)
     signal launcherToggled()
     signal switcherToggled()
+    signal settingsToggled()
 
     // ── IPC handler ─────────────────────────────────────────────────
 
@@ -54,6 +55,11 @@ Singleton {
         function toggleSwitcher(): string {
             root.switcherToggled();
             return "toggled switcher";
+        }
+
+        function toggleSettings(): string {
+            root.settingsToggled();
+            return "toggled settings";
         }
     }
 }

@@ -14,7 +14,7 @@ consumers (like the fern NixOS config) can import.
   shell
 - **Rust crates**: garden-core, garden-daemon, garden-ctl, garden-tui,
   garden-themes
-- **QML**: Quickshell desktop shell (stub)
+- **QML**: Quickshell desktop shell
 
 ## Directory Structure
 
@@ -52,6 +52,9 @@ just check           # nix flake check
 just fmt             # Format Nix + Rust
 just lint            # Format + check
 nix develop          # Enter dev shell
+just qs-log          # Follow Quickshell logs (QML errors show here)
+just qs-restart      # Kill Quickshell; niri auto-respawns it
+just qs-ipc toggleSettings   # Call a garden IPC method
 ```
 
 ## Den Patterns
@@ -68,6 +71,112 @@ nix develop          # Enter dev shell
 2. **ALWAYS** run `cargo build` after modifying Rust code
 3. **NEVER** modify Cargo.lock manually -- use `cargo update`
 4. Format with `nixpkgs-fmt` and `cargo fmt` before committing
+
+## QML Development Workflow
+
+### How the shell runs
+
+The QML shell is served to Quickshell via a symlink:
+
+```
+~/.config/quickshell/garden → /home/ada/src/garden-shell/_qml/
+```
+
+Quickshell reads directly from the source tree. It is started by niri
+(`spawn-at-startup "quickshell" "-c" "garden"`) and runs as a daemon.
+
+### Three tiers of change
+
+| What changed | How it takes effect |
+|---|---|
+| Edit an existing QML file | **Automatic.** Quickshell watches files and hot-reloads on save. |
+| Add a new QML file / component | **Automatic.** Hot-reload picks up new files. Check `just qs-log` for errors. |
+| Add/change a niri keybind | **Requires `nixos-rebuild switch` in fern.** Niri config is generated from `~/src/fern/modules/desktop/niri.nix`. |
+
+### Debugging QML
+
+**Always check `just qs-log` after making QML changes.** Quickshell runs
+daemonized with stderr to `/dev/null`, so QML errors are only visible via the
+built-in log system.
+
+```bash
+just qs-log              # Follow logs (Ctrl-C to stop)
+just qs-log-tail 50      # Last 50 lines (non-blocking)
+```
+
+Common issues:
+- **Binding loops**: QML warns `Binding loop detected for property "X"`. These
+  cause infinite updates and can prevent rendering. Break the loop by guarding
+  programmatic property writes (see `ColorInput._updating` pattern).
+- **Silent failures**: If an IPC call returns success but nothing renders, the
+  component likely has a QML error. Check the log.
+- **Import errors**: New singletons must be imported
+  (`import "../services"`) -- `pragma Singleton` makes them available within
+  their module but they still need the import path.
+
+### Restarting Quickshell
+
+When hot-reload isn't enough (rare -- usually only after moving/renaming files):
+
+```bash
+just qs-restart          # Kill process; niri respawns it automatically
+```
+
+### Fern integration
+
+Niri keybinds and Home Manager config live in `~/src/fern`. Garden overlays are
+wired in `~/src/fern/modules/desktop/niri.nix`:
+
+```nix
+"${mod}+Slash".action.spawn = [ "sh" "-c" "qs -c garden ipc call garden toggleLauncher" ];
+"${mod}+Tab".action.spawn   = [ "sh" "-c" "qs -c garden ipc call garden toggleSwitcher" ];
+"${mod}+Comma".action.spawn = [ "sh" "-c" "qs -c garden ipc call garden toggleSettings" ];
+```
+
+To rebuild fern with local garden-shell changes:
+
+```bash
+just switch              # In garden-shell: rebuilds fern with path override
+```
+
+**When to run from where:**
+- **`just switch` in garden-shell** — when you've changed garden-shell code
+  (QML, Rust, Nix aspects). Uses `--override-input` so fern sees your local
+  tree instead of the flake lock.
+- **`just switch` in fern** — when you've only changed fern itself (niri
+  settings, user config, packages) and garden-shell hasn't changed locally.
+- During active garden-shell development, almost always run from garden-shell.
+
+After pushing garden-shell changes, update fern's lock so both work:
+
+```bash
+cd ~/src/fern && nix flake update garden-shell
+```
+
+### QML coding patterns
+
+When writing new QML components, follow these patterns from the existing codebase:
+
+- **Overlays**: Follow `Launcher.qml` exactly -- PanelWindow, WlrLayer.Overlay,
+  DitherOverlay backdrop, fade+slide animation, Escape to close.
+- **Singletons**: Use `pragma Singleton` + `pragma ComponentBehavior: Bound`.
+  Reference singletons in `shell.qml` to force instantiation.
+- **IPC**: Add signal to `HookService.qml`, add method to `IpcHandler`, connect
+  in the overlay via `Connections { target: HookService }`.
+- **Reactivity**: When replacing an object to trigger QML change detection
+  (`JSON.parse(JSON.stringify(...))`), guard against binding loops by checking
+  if the value actually changed before replacing.
+
+### Checklist: adding a new overlay
+
+1. Create `_qml/overlays/NewOverlay.qml` (PanelWindow pattern)
+2. Add signal + IPC method in `_qml/services/HookService.qml`
+3. Add `NewOverlay {}` in `_qml/shell.qml`
+4. Check `just qs-log` for errors after hot-reload
+5. Test via `just qs-ipc toggleNewOverlay`
+6. Add keybind in `~/src/fern/modules/desktop/niri.nix`
+7. Add keybind in `_config/niri.kdl` (reference config)
+8. `just switch` to deploy the keybind
 
 ## Integration Rules
 

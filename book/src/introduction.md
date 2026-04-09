@@ -20,6 +20,13 @@ The **Palette** section covers everything about Garden's color system:
   fish, and kakoune configs
 - [**Custom palettes**](palette/custom.md) — creating your own
 
+The **Developing** section covers the QML shell and the dev-to-dogfood workflow:
+
+- [**Shell architecture**](developing/architecture.md) — singletons, overlays,
+  IPC, and theme reactivity
+- [**Development workflow**](developing/workflow.md) — the three-tier dev loop,
+  debugging, fern integration, and justfile recipes
+
 ## How to read it
 
 Each page uses progressive disclosure. The top of the page gives you what you

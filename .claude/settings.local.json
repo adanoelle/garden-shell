@@ -9,7 +9,17 @@
       "WebFetch(domain:quickshell.org)",
       "Bash(cargo build:*)",
       "Bash(cargo test:*)",
-      "Bash(cargo run:*)"
+      "Bash(cargo run:*)",
+      "Bash(find:*)",
+      "Bash(target/debug/garden-themes apply:*)",
+      "Bash(grep:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:yalter.github.io)",
+      "WebFetch(domain:niri-wm.github.io)",
+      "Bash(nix flake:*)",
+      "Bash(cat:*)",
+      "WebFetch(domain:deepwiki.com)",
+      "Bash(qs:*)"
     ]
   }
 }

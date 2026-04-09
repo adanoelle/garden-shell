@@ -61,6 +61,7 @@ binds {
     // ── Garden shell overlays ─────────────────────────────────────
     Mod+Slash { spawn "sh" "-c" "qs -c garden ipc call garden toggleLauncher"; }
     Mod+Tab   { spawn "sh" "-c" "qs -c garden ipc call garden toggleSwitcher"; }
+    Mod+Comma { spawn "sh" "-c" "qs -c garden ipc call garden toggleSettings"; }
 
     // ── Navigation ────────────────────────────────────────────────
     Mod+H { focus-column-left; }
