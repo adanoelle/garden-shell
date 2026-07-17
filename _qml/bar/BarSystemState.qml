@@ -14,6 +14,18 @@ Row {
     spacing: 8
     visible: ModeService.showContent
 
+    // Notification suppression indicator (spec §6): dot while
+    // suppressed — near-invisible text-4 when the queue is empty,
+    // accent once notifications have queued silently.
+    Rectangle {
+        anchors.verticalCenter: parent.verticalCenter
+        width: 5
+        height: 5
+        radius: 2.5
+        visible: NotificationService.suppressed
+        color: NotificationService.queuedCount > 0 ? Theme.accent : Theme.text4
+    }
+
     BarStateSlot {
         id: volSlot
         prefix: "v"
