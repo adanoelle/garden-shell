@@ -19,7 +19,12 @@
       "Bash(nix flake:*)",
       "Bash(cat:*)",
       "WebFetch(domain:deepwiki.com)",
-      "Bash(qs:*)"
+      "Bash(qs:*)",
+      "Bash(wc:*)",
+      "Bash(git:*)",
+      "Bash(test:*)",
+      "Bash(just qs-log-tail:*)",
+      "Bash(env:*)"
     ]
   }
 }

@@ -1,8 +1,11 @@
 # modules/aspects/terminal.nix — terminal stack (kitty, fish, kakoune)
-{ garden, ... }:
+{ garden, self, ... }:
 {
   garden.terminal = {
-    includes = [ garden.palette ];
+    # toolkit provides the garden-themes binary that all the sourced theme
+    # files below depend on; without it a consumer of garden.terminal gets
+    # include directives pointing at files nothing can generate.
+    includes = [ garden.palette garden.toolkit ];
 
     nixos = { pkgs, ... }: {
       # S1 stub: system-level terminal config
@@ -11,8 +14,22 @@
     homeManager = { config, pkgs, ... }:
       let
         themesDir = "${config.xdg.configHome}/garden/themes";
+        gardenThemes = self.packages.${pkgs.system}.garden-themes;
       in
       {
+        # Seed ~/.config/garden/themes/ on first activation so a fresh
+        # machine gets a themed terminal without a manual `garden-themes
+        # apply`. Guarded on the manifest so an existing installation's
+        # runtime palette selection is never clobbered. Runs after
+        # gardenPalettes (palette.nix) so palettes.toml exists. Best-effort:
+        # a seed failure must not abort the whole activation.
+        home.activation.gardenThemesSeed =
+          config.lib.dag.entryAfter [ "writeBoundary" "gardenPalettes" ] ''
+            if [ ! -f "${themesDir}/.manifest.json" ]; then
+              ${gardenThemes}/bin/garden-themes apply \
+                || echo "warning: garden-themes seed failed; run 'garden-themes apply' manually" >&2
+            fi
+          '';
         # Kitty: include garden theme from mutable themes dir so SIGUSR1
         # config reload picks up palette changes across all instances.
         # Relative path from ~/.config/kitty/ to ~/.config/garden/themes/.

@@ -157,8 +157,9 @@ cd ~/src/fern && nix flake update garden-shell
 
 When writing new QML components, follow these patterns from the existing codebase:
 
-- **Overlays**: Follow `Launcher.qml` exactly -- PanelWindow, WlrLayer.Overlay,
-  DitherOverlay backdrop, fade+slide animation, Escape to close.
+- **Overlays**: Extend `OverlayBase` (not `PanelWindow` directly). See checklist
+  below. Non-modal windows (OSD, Notifications, DesktopClock) use different
+  window types — follow the first such component built, not `OverlayBase`.
 - **Singletons**: Use `pragma Singleton` + `pragma ComponentBehavior: Bound`.
   Reference singletons in `shell.qml` to force instantiation.
 - **IPC**: Add signal to `HookService.qml`, add method to `IpcHandler`, connect
@@ -167,9 +168,49 @@ When writing new QML components, follow these patterns from the existing codebas
   (`JSON.parse(JSON.stringify(...))`), guard against binding loops by checking
   if the value actually changed before replacing.
 
+### Color role contract
+
+The 13 semantic color roles live in `Theme.qml` and nowhere else.
+
+**Single source of truth:** `Theme._applyColorMap(c)` contains the one
+canonical mapping from JSON dash-case keys to QML camelCase properties.
+`Theme.applyColorPreview(colors)` is the public API for live preview (used by
+PaletteEditor). Never duplicate this mapping.
+
+**Adding a new color role** requires touching exactly these three places in
+`Theme.qml`:
+1. New `property color` declaration
+2. New entry in `colorKeyOrder`
+3. New assignment in `_applyColorMap`
+
+**PaletteEditor data flow:**
+- Reads palette data from `Theme.allPaletteData` via `Connections { target: Theme }`
+- Pushes live preview via `Theme.applyColorPreview(_workingColors)`
+- Has no `FileView` of its own — Theme's FileView is the single watcher
+
+### Component vocabulary
+
+Use these shared components instead of inline implementations:
+
+| Pattern | Component | File |
+|---|---|---|
+| Modal overlay | `OverlayBase` | `_qml/overlays/OverlayBase.qml` |
+| Result / list row | `ResultItem` | `_qml/components/ResultItem.qml` |
+| Action button | `GButton` | `_qml/components/GButton.qml` |
+| Keyboard hint footer | `HintLabel` | `_qml/components/HintLabel.qml` |
+
+Import components with `import "../components"` from overlay files.
+
+**Animation durations:** Launcher uses 150 ms; ChannelSwitcher and Settings use
+200 ms. These values are **intentional per the design spec's timing hierarchy**
+— do not normalise them.
+
 ### Checklist: adding a new overlay
 
-1. Create `_qml/overlays/NewOverlay.qml` (PanelWindow pattern)
+1. Create `_qml/overlays/NewOverlay.qml` extending `OverlayBase`
+   - Set `_namespace`, `contentTarget`, `slideTarget`
+   - Override `_onBeforeShow()` / `_onBeforeClose()` as needed
+   - Keep own `FocusScope` + `Connections { target: HookService }` + content
 2. Add signal + IPC method in `_qml/services/HookService.qml`
 3. Add `NewOverlay {}` in `_qml/shell.qml`
 4. Check `just qs-log` for errors after hot-reload

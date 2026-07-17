@@ -1,8 +1,8 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Wayland
 import ".."
+import "../components"
 import "../compositor"
 import "../services"
 
@@ -10,28 +10,16 @@ import "../services"
 ///
 /// Searches apps, channels, palettes, and inline calc. Triggered via
 /// `qs ipc call garden toggleLauncher` or HookService.launcherToggled signal.
-PanelWindow {
+OverlayBase {
     id: launcher
 
-    anchors {
-        top: true
-        bottom: true
-        left: true
-        right: true
-    }
-
-    visible: false
-    color: "transparent"
-    focusable: true
-    exclusiveZone: 0
-
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
-    WlrLayershell.namespace: "garden-launcher"
+    _namespace:    "garden-launcher"
+    animDuration:  150
+    contentTarget: content
+    slideTarget:   contentSlide
 
     // ── State ─────────────────────────────────────────────────────────
 
-    property bool _open: false
     property var _results: []
 
     // ── Toggle ────────────────────────────────────────────────────────
@@ -41,77 +29,12 @@ PanelWindow {
         function onLauncherToggled() { launcher._toggle(); }
     }
 
-    function _toggle() {
-        if (_open) _close();
-        else _show();
-    }
+    // ── Show-init hook ────────────────────────────────────────────────
 
-    function _show() {
-        _open = true;
-        content.opacity = 0;
-        contentSlide.y = 20;
+    function _onBeforeShow() {
         searchInput.text = "";
-        _results = _buildResults("");
-        visible = true;
+        launcher._results = launcher._buildResults("");
         searchInput.forceActiveFocus();
-        showAnim.start();
-    }
-
-    function _close() {
-        if (!_open) return;
-        hideAnim.start();
-    }
-
-    function _closeInstant() {
-        if (!_open) return;
-        hideAnim.stop();
-        content.opacity = 0;
-        contentSlide.y = 20;
-        launcher._open = false;
-        launcher.visible = false;
-    }
-
-    // ── Animations ────────────────────────────────────────────────────
-
-    ParallelAnimation {
-        id: showAnim
-
-        NumberAnimation {
-            target: content; property: "opacity"
-            to: 1; duration: 150; easing.type: Easing.OutCubic
-        }
-        NumberAnimation {
-            target: contentSlide; property: "y"
-            to: 0; duration: 150; easing.type: Easing.OutCubic
-        }
-    }
-
-    ParallelAnimation {
-        id: hideAnim
-
-        NumberAnimation {
-            target: content; property: "opacity"
-            to: 0; duration: 150; easing.type: Easing.InCubic
-        }
-        NumberAnimation {
-            target: contentSlide; property: "y"
-            to: 20; duration: 150; easing.type: Easing.InCubic
-        }
-
-        onFinished: {
-            launcher._open = false;
-            launcher.visible = false;
-        }
-    }
-
-    // ── Backdrop ──────────────────────────────────────────────────────
-
-    DitherOverlay { density: "dense" }
-
-    // Click outside to close.
-    MouseArea {
-        anchors.fill: parent
-        onClicked: launcher._close()
     }
 
     // ── Content ───────────────────────────────────────────────────────
@@ -205,79 +128,32 @@ PanelWindow {
                 ListView {
                     id: resultList
                     width: parent.width
-                    height: Math.min(contentHeight, 36 * 8)
+                    height: Math.min(contentHeight, 28 * 8)
                     clip: true
                     model: launcher._results
                     currentIndex: 0
                     highlightMoveDuration: 60
                     boundsBehavior: Flickable.StopAtBounds
 
-                    delegate: Rectangle {
-                        id: resultDelegate
+                    delegate: ResultItem {
                         required property var modelData
                         required property int index
 
-                        width: resultList.width
-                        height: 36
-                        color: index === resultList.currentIndex
-                            ? Theme.baseHl : "transparent"
-
-                        Text {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.right: badgeText.left
-                            anchors.rightMargin: 8
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: resultDelegate.modelData.name
-                            color: Theme.text1
-                            font.family: Theme.monoFont
-                            font.pixelSize: 13
-                            font.weight: resultDelegate.index === resultList.currentIndex
-                                ? Font.DemiBold : Font.Normal
-                            elide: Text.ElideRight
-                        }
-
-                        Text {
-                            id: badgeText
-                            anchors.right: parent.right
-                            anchors.rightMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "[" + resultDelegate.modelData.type + "]"
-                            color: Theme.text4
-                            font.family: Theme.monoFont
-                            font.pixelSize: 11
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                resultList.currentIndex = resultDelegate.index;
-                                launcher._executeSelected();
-                            }
+                        primary:   modelData.name
+                        secondary: "[" + modelData.type + "]"
+                        selected:  index === resultList.currentIndex
+                        onActivated: {
+                            resultList.currentIndex = index;
+                            launcher._executeSelected();
                         }
                     }
                 }
             }
         }
 
-        // Hint text with background for readability over dither.
-        Rectangle {
+        HintLabel {
             anchors.horizontalCenter: parent.horizontalCenter
-            width: hintText.width + 16
-            height: hintText.height + 8
-            radius: 3
-            color: Theme.base
-            border.color: Theme.borderSub
-            border.width: 1
-
-            Text {
-                id: hintText
-                anchors.centerIn: parent
-                text: "Esc close  \u00b7  \u2191\u2193 navigate  \u00b7  \u21b5 run"
-                color: Theme.text3
-                font.family: Theme.monoFont
-                font.pixelSize: 11
-            }
+            text: "Esc close  \u00b7  \u2191\u2193 navigate  \u00b7  \u21b5 run"
         }
     }
 

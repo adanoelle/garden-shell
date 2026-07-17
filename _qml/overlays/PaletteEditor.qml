@@ -2,16 +2,18 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import ".."
+import "../components"
 import "../services"
 
 /// Palette editor panel: selector tabs, hex editors, preview, save/discard/fork.
 ///
 /// Data flow:
-///   palettes.json (FileView) → _palettesData → _workingColors → Theme.*
+///   Theme.allPaletteData (Connections) → _palettesData → _workingColors
+///   → Theme.applyColorPreview() (live preview)
 ///
 /// Save flow:
 ///   deep-copy _palettesData → update colors + active → serialize TOML
-///   → write to palettes.toml → garden-themes apply → FileView picks up change
+///   → write to palettes.toml → garden-themes apply → Theme FileView reloads
 Item {
     id: root
     width: parent ? parent.width : 520
@@ -59,32 +61,19 @@ Item {
     readonly property string _configHome: ConfigService.configHome
     readonly property string _palettesTomlPath: _configHome + "/garden/palettes.toml"
 
-    // ── Load palette data from JSON ─────────────────────────────────
+    // ── Sync from Theme (single FileView lives in Theme, not here) ──
 
-    FileView {
-        id: palettesFile
-        path: Theme.themesDir + "/palettes.json"
-        watchChanges: true
-        blockLoading: true
-
-        onLoaded: root._reloadFromFile()
-        onFileChanged: palettesFile.reload()
-    }
-
-    function _reloadFromFile() {
-        const content = palettesFile.text();
-        if (content.length === 0) return;
-        try {
-            root._palettesData = JSON.parse(content);
-        } catch (e) {
-            console.warn("PaletteEditor: failed to parse palettes.json:", e);
-            return;
+    /// Sync when Theme loads or reloads palettes.json.
+    Connections {
+        target: Theme
+        function onAllPaletteDataChanged() {
+            root._palettesData = Theme.allPaletteData;
+            // Select the active palette if we don't have one yet.
+            if (!root._editingPalette || !root._palettesData.palettes?.[root._editingPalette]) {
+                root._editingPalette = root._palettesData.active || Theme.activePalette;
+            }
+            root._loadWorkingColors();
         }
-        // Select the active palette if we don't have one yet.
-        if (!root._editingPalette || !root._palettesData.palettes?.[root._editingPalette]) {
-            root._editingPalette = root._palettesData.active || Theme.activePalette;
-        }
-        root._loadWorkingColors();
     }
 
     function _loadWorkingColors() {
@@ -107,21 +96,7 @@ Item {
     // ── Live preview: push working colors into Theme ────────────────
 
     function _pushToTheme() {
-        const c = root._workingColors;
-        if (!c || Object.keys(c).length === 0) return;
-        Theme.baseDeep   = c["base-deep"]   ?? Theme.baseDeep;
-        Theme.base       = c["base"]        ?? Theme.base;
-        Theme.baseRaised = c["base-raised"] ?? Theme.baseRaised;
-        Theme.baseHl     = c["base-hl"]     ?? Theme.baseHl;
-        Theme.borderSub  = c["border-sub"]  ?? Theme.borderSub;
-        Theme.border     = c["border"]      ?? Theme.border;
-        Theme.text4      = c["text-4"]      ?? Theme.text4;
-        Theme.text3      = c["text-3"]      ?? Theme.text3;
-        Theme.text2      = c["text-2"]      ?? Theme.text2;
-        Theme.text1      = c["text-1"]      ?? Theme.text1;
-        Theme.accent     = c["accent"]      ?? Theme.accent;
-        Theme.urgent     = c["urgent"]      ?? Theme.urgent;
-        Theme.ok         = c["ok"]          ?? Theme.ok;
+        Theme.applyColorPreview(root._workingColors);
     }
 
     // ── Handle a color edit from a ColorInput ───────────────────────
@@ -145,7 +120,29 @@ Item {
 
     // ── Save: serialize TOML and write to disk ──────────────────────
 
+    /// Validates that every color role in the working set is a #rrggbb hex
+    /// string. Returns true if all are valid.
+    function _validateWorkingColors(): bool {
+        const re = /^#[0-9a-fA-F]{6}$/;
+        for (let i = 0; i < root._colorOrder.length; i++) {
+            const key = root._colorOrder[i];
+            const value = root._workingColors[key];
+            if (typeof value !== "string" || !re.test(value)) {
+                console.warn("PaletteEditor: invalid color for '" + key
+                    + "': " + JSON.stringify(value) + " — save aborted");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// TOML content pending write; consumed by saveProcess.onStarted.
+    property string _pendingToml: ""
+
     function save() {
+        // Refuse to write invalid data to the palette source of truth.
+        if (!root._validateWorkingColors()) return;
+
         // Build updated data with new active palette and colors.
         const data = JSON.parse(JSON.stringify(root._palettesData));
         data.active = root._editingPalette;
@@ -159,19 +156,25 @@ Item {
         root._palettesData = data;
         root._dirty = false;
 
-        // Serialize to TOML and write.
-        const toml = root._serializeToml(data);
-        saveProcess.command = [
-            "bash", "-c",
-            "cat > '" + root._palettesTomlPath + "' << 'GARDEN_EOF'\n" + toml + "\nGARDEN_EOF"
-        ];
+        // Serialize to TOML and write via tee's stdin: the content never
+        // passes through a shell, so no quoting/heredoc pitfalls.
+        root._pendingToml = root._serializeToml(data);
+        saveProcess.command = ["tee", root._palettesTomlPath];
         saveProcess.running = true;
     }
 
     Process {
         id: saveProcess
         running: false
+        stdinEnabled: true
+        onStarted: {
+            saveProcess.write(root._pendingToml);
+            // Close stdin so tee sees EOF and exits.
+            saveProcess.stdinEnabled = false;
+        }
         onExited: (exitCode, exitStatus) => {
+            // Re-arm stdin for the next save.
+            saveProcess.stdinEnabled = true;
             if (exitCode !== 0) {
                 console.warn("PaletteEditor: failed to write palettes.toml");
                 return;
@@ -234,27 +237,27 @@ Item {
 
     // ── TOML serialization ──────────────────────────────────────────
 
-    readonly property var _colorOrder: [
-        "base-deep", "base", "base-raised", "base-hl",
-        "border-sub", "border",
-        "text-4", "text-3", "text-2", "text-1",
-        "accent", "urgent", "ok"
-    ]
+    readonly property var _colorOrder: Theme.colorKeyOrder
+
+    /// Escapes a string for use inside a TOML basic (double-quoted) string.
+    function _tomlEscape(s: string): string {
+        return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    }
 
     function _serializeToml(data: var): string {
-        let out = 'active = "' + (data.active || "sumi") + '"\n';
+        let out = 'active = "' + root._tomlEscape(data.active || "sumi") + '"\n';
         const palettes = data.palettes || {};
         const names = Object.keys(palettes).sort();
         for (let i = 0; i < names.length; i++) {
             const name = names[i];
             const p = palettes[name];
             out += "\n[palettes." + name + "]\n";
-            out += 'name = "' + (p.name || name) + '"\n';
-            out += 'subtitle = "' + (p.subtitle || "") + '"\n';
-            out += 'icon = "' + (p.icon || "\u25cf") + '"\n';
+            out += 'name = "' + root._tomlEscape(p.name || name) + '"\n';
+            out += 'subtitle = "' + root._tomlEscape(p.subtitle || "") + '"\n';
+            out += 'icon = "' + root._tomlEscape(p.icon || "\u25cf") + '"\n';
             out += "builtin = " + (p.builtin ? "true" : "false") + "\n";
             if (p.forked_from) {
-                out += 'forked_from = "' + p.forked_from + '"\n';
+                out += 'forked_from = "' + root._tomlEscape(p.forked_from) + '"\n';
             }
             out += "\n[palettes." + name + ".colors]\n";
             const colors = p.colors || {};
@@ -379,77 +382,21 @@ Item {
         Row {
             spacing: 8
 
-            // Save/Apply button.
-            Rectangle {
-                width: saveLabel.width + 24
-                height: 32
-                color: (root._dirty || root._needsApply) ? Theme.accent : Theme.baseRaised
-                border.color: Theme.border
-                border.width: 1
-
-                Text {
-                    id: saveLabel
-                    anchors.centerIn: parent
-                    text: root._dirty ? "save" : "apply"
-                    color: (root._dirty || root._needsApply) ? Theme.baseDeep : Theme.text3
-                    font.family: Theme.monoFont
-                    font.pixelSize: 12
-                    font.weight: Font.DemiBold
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: (root._dirty || root._needsApply) ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: { if (root._dirty || root._needsApply) root.save(); }
-                }
+            // Save/Apply button (accent fill when there's something to act on).
+            GButton {
+                label:  root._dirty ? "save" : "apply"
+                active: root._dirty || root._needsApply
+                onClicked: { if (root._dirty || root._needsApply) root.save(); }
             }
 
-            // Reset button.
-            Rectangle {
-                width: resetLabel.width + 24
-                height: 32
-                color: Theme.baseRaised
-                border.color: Theme.border
-                border.width: 1
-
-                Text {
-                    id: resetLabel
-                    anchors.centerIn: parent
-                    text: "reset"
-                    color: (root._dirty || root._needsApply) ? Theme.text1 : Theme.text4
-                    font.family: Theme.monoFont
-                    font.pixelSize: 12
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: (root._dirty || root._needsApply) ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: { if (root._dirty || root._needsApply) root._discardEdits(); }
-                }
+            GButton {
+                label: "reset"
+                onClicked: { if (root._dirty || root._needsApply) root._discardEdits(); }
             }
 
-            // Fork button.
-            Rectangle {
-                width: forkLabel.width + 24
-                height: 32
-                color: Theme.baseRaised
-                border.color: Theme.border
-                border.width: 1
-
-                Text {
-                    id: forkLabel
-                    anchors.centerIn: parent
-                    text: "fork"
-                    color: Theme.text2
-                    font.family: Theme.monoFont
-                    font.pixelSize: 12
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.fork()
-                }
+            GButton {
+                label: "fork"
+                onClicked: root.fork()
             }
         }
     }
