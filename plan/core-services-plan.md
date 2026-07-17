@@ -33,17 +33,29 @@ notification surface to land on. Notifications are the keystone.
 - **Spec fidelity:** visual details (sizes, colors, timings) come from
   `02-shell-design.md` §6–10 unless noted as a deliberate deviation.
 
-## Step 0 — Verify the platform (half a session)
+## Step 0 — Verify the platform (half a session) ✅ 2026-07-17
 
-- [ ] Run `just qs-probe` — one-shot probe (`_qml/dev/probe.qml`) that
+**Probe results (quickshell 0.1.0, Nixpkgs):** all seven modules ok —
+Pipewire, Notifications, SystemTray, UPower, Mpris, Pam, and
+Quickshell.Wayland (`WlSessionLock` instantiates). Caveats:
+
+- The UPower **system daemon** is not running on this machine
+  (`org.freedesktop.UPower` not on D-Bus) — enable `services.upower`
+  in fern before Phase E battery work.
+- The probe's `Qt.quit()` has no receiver under `ShellRoot`; the probe
+  process must be killed manually after it prints.
+- Editing a service QML file does not always trigger hot-reload;
+  `touch _qml/shell.qml` forces it.
+
+- [x] Run `just qs-probe` — one-shot probe (`_qml/dev/probe.qml`) that
       imports each required service module and prints ok/MISSING per
       line, plus `qs --version`.
-- [ ] If `Quickshell.Services.Pipewire` reports MISSING, the installed
+- [x] If `Quickshell.Services.Pipewire` reports MISSING, the installed
       quickshell was built without pipewire support — fix the package in
       fern before Phase A's AudioService (already migrated) can work.
-- [ ] Confirm niri + quickshell handle `WlSessionLock` (niri implements
+- [x] Confirm niri + quickshell handle `WlSessionLock` (niri implements
       `ext-session-lock-v1`; probe checks the quickshell side).
-- [ ] Note results at the top of this file so later steps don't re-litigate.
+- [x] Note results at the top of this file so later steps don't re-litigate.
 
 ## Phase A — Reactive audio plumbing (1 session) ✅ implemented
 
@@ -60,14 +72,59 @@ Replace the 500 ms `wpctl` poll in `AudioService.qml` with
       optimistically from the keybind path later).
 - [x] `BarSystemState` now listens to `stateChanged()` instead of raw
       property changes — the bar slots no longer flash on login.
-- [ ] **Verify on hardware:** `just qs-probe`, then `just qs-log` after
-      hot-reload; change volume and confirm the `v{n}` slot brightens and
-      no warnings appear.
+- [x] **Verify on hardware** (2026-07-17): `just qs-probe` all ok; volume
+      bump 55→60→55 % via wpctl produced clean logs (the old wpctl-poll
+      warnings are gone) and the `stateChanged()` → `v{n}` trigger path
+      is confirmed wired.
 
 Why first: OSD and bar both want event-driven audio; polling can't drive
 a "show OSD on change" surface without heuristics.
 
-## Phase B — Notifications (2–3 sessions) ← keystone
+## Phase B — Notifications (2–3 sessions) ← keystone ✅ implemented 2026-07-17
+
+> B1–B3 landed: NotificationService + NotificationPopups/NotificationCard
+> (first non-modal window), ModeService.hasMode(), HookService IPC
+> (`suppressNotifications`, `toggleNotifications`), bar suppression dot,
+> Super+Shift+N in fern (needs `just switch`) + `_config/niri.kdl`.
+> Verified end-to-end: D-Bus name owned by quickshell, popups render,
+> suppress → queue → release cycle works. Decisions: bar dot shows at
+> text-4 whenever suppressed, accent once items queue; unsuppressing
+> releases the queue as popups; card click dismisses; no icons/images in
+> cards yet (text-first). Debugging note: interaction-time
+> "invalid context" / ReferenceError QML errors during this build were
+> stale hot-reload state, not code bugs — gone after a full restart
+> (see CLAUDE.md "Restarting Quickshell"). Also fixed `just qs-restart`,
+> which had never actually killed the process (`.quickshell-wrapped`
+> comm name).
+>
+> **Upgrades landed 2026-07-17 (second pass):**
+> - **History center** — session-only in-memory history (cap 50), plain-JS
+>   snapshots taken at arrival in `onNotification` (single capture point,
+>   covers shown AND queued; Notification QObjects die after close).
+>   `overlays/NotificationCenter.qml` (OverlayBase, 480 px, 200 ms) with
+>   j/k/arrows nav, `c` clear, Esc close; IPC `toggleNotificationCenter`,
+>   Super+Shift+M. Limitation: `replaces_id` updates don't refresh
+>   history snapshots. Synthetics don't enter history.
+> - **Summary release** — unsuppressing no longer dumps the queue as a
+>   popup bomb: queue is cleared first (idempotent under rapid toggles),
+>   N=1 releases the real popup (keeps actions), N>1 dismisses all and
+>   shows ONE synthetic summary card ("N notifications while suppressed")
+>   whose `open` action / card click opens the center. Synthetic shim =
+>   plain JS object matching NotificationCard's API surface with
+>   `expire()`/`dismiss()` closures → `_remove`; required untyping
+>   `timeoutFor(n)` (typed param coerced JS objects to null).
+> - **Focus sessions** — `focusActive` as global third OR-term in
+>   `suppressed`; IPC `focusStart`/`focusEnd` (idempotent `setFocus`);
+>   on end the queue releases synchronously, then a "focus session
+>   complete / take a break" synthetic shows — deliberately bypassing the
+>   queue (local intentional signal per §6, shown even on suppress-mode
+>   channels). `focusSessionChanged(bool)` signal on HookService.
+> - Bar dot unchanged — existing suppressed/queued logic already covers
+>   focus sessions.
+> - **Critical bypass** — urgency=critical skips all three suppression
+>   layers and pops up immediately (GNOME/KDE DND convention; keeps the
+>   Phase D low-battery warning from dying silently in a focus session).
+>   Trade-off accepted: suppression is no longer absolute for criticals.
 
 **B1. `services/NotificationService.qml`** — singleton wrapping
 `NotificationServer`:
@@ -78,7 +135,8 @@ a "show OSD on change" surface without heuristics.
   - global toggle (IPC `suppressNotifications(bool)` + Super+Shift+N);
   - per-channel via ModeService: `"suppress-notifications"` in the active
     channel's mode stack;
-  - focus sessions later reuse the same switch (IPC `focusStart/focusEnd`).
+  - focus sessions ✅ landed as global `focusActive` third layer (IPC
+    `focusStart/focusEnd`).
 - While suppressed: queue silently, expose `queuedCount` for the bar dot.
 - Expiry: 10 s default (spec), respect notification-specified timeouts,
   urgency=critical never auto-expires.
