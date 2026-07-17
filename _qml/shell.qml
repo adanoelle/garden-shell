@@ -3,6 +3,7 @@ import Quickshell.Wayland
 import "bar"
 import "compositor"
 import "notifications"
+import "osd"
 import "overlays"
 import "services"
 
@@ -41,4 +42,5 @@ ShellRoot {
 
     // Non-modal windows (no focus grab, exclusiveZone 0).
     NotificationPopups {}
+    Osd {}
 }

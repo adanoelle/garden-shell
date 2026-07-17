@@ -164,7 +164,7 @@ window; establishes the pattern (PanelWindow, `WlrLayer.Overlay`,
 **Risk:** only one notification daemon can own the D-Bus name. Rollout
 step: verify no other daemon is enabled in fern before switching.
 
-## Phase C — Volume/brightness OSD (1 session)
+## Phase C — Volume/brightness OSD (1 session) ✅ implemented 2026-07-17
 
 `osd/Osd.qml`, second non-modal window, reusing the Phase B pattern:
 
@@ -173,6 +173,14 @@ step: verify no other daemon is enabled in fern before switching.
   AudioService/BrightnessService change signals.
 - Muted state: "muted" in `text-4`, empty bar; still shown on mute toggle.
 - Guard: no OSD on startup or palette reload; only on real state changes.
+
+> Landed: `osd/Osd.qml` + shell.qml wiring. Volume OSD verified instant
+> (Pipewire event-driven). Collision: single bar retargets to most-recent
+> source, no stacking. Brightness lag confirmed (~3 s poll delay, plus
+> I2C bus contention when ddcutil setvcp races the poll); the signal-driven
+> path works but needs an optimistic `showBrightnessOsd(value)` IPC method
+> callable from the fern keybind to feel responsive — deferred to a
+> follow-up (plan §10 noted this risk).
 
 ## Phase D — Lock screen + power menu (2 sessions)
 
