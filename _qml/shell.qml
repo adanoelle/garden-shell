@@ -2,6 +2,7 @@ import Quickshell
 import Quickshell.Wayland
 import "bar"
 import "compositor"
+import "notifications"
 import "overlays"
 import "services"
 
@@ -21,6 +22,7 @@ ShellRoot {
     property var _mode: ModeService
     property var _audio: AudioService
     property var _brightness: BrightnessService
+    property var _notifications: NotificationService
 
     Variants {
         model: Quickshell.screens
@@ -35,4 +37,8 @@ ShellRoot {
     Launcher {}
     ChannelSwitcher {}
     Settings {}
+    NotificationCenter {}
+
+    // Non-modal windows (no focus grab, exclusiveZone 0).
+    NotificationPopups {}
 }

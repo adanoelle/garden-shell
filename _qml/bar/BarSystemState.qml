@@ -14,6 +14,18 @@ Row {
     spacing: 8
     visible: ModeService.showContent
 
+    // Notification suppression indicator (spec §6): dot while
+    // suppressed — near-invisible text-4 when the queue is empty,
+    // accent once notifications have queued silently.
+    Rectangle {
+        anchors.verticalCenter: parent.verticalCenter
+        width: 5
+        height: 5
+        radius: 2.5
+        visible: NotificationService.suppressed
+        color: NotificationService.queuedCount > 0 ? Theme.accent : Theme.text4
+    }
+
     BarStateSlot {
         id: volSlot
         prefix: "v"
@@ -24,8 +36,7 @@ Row {
 
         Connections {
             target: AudioService
-            function onVolumeChanged() { volSlot._trigger() }
-            function onMutedChanged()  { volSlot._trigger() }
+            function onStateChanged() { volSlot._trigger() }
         }
     }
 
@@ -36,7 +47,7 @@ Row {
 
         Connections {
             target: BrightnessService
-            function onBrightnessChanged() { briSlot._trigger() }
+            function onStateChanged() { briSlot._trigger() }
         }
     }
 }

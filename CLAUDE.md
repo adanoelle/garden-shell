@@ -53,7 +53,7 @@ just fmt             # Format Nix + Rust
 just lint            # Format + check
 nix develop          # Enter dev shell
 just qs-log          # Follow Quickshell logs (QML errors show here)
-just qs-restart      # Kill Quickshell; niri auto-respawns it
+just qs-restart      # Kill and relaunch Quickshell
 just qs-ipc toggleSettings   # Call a garden IPC method
 ```
 
@@ -116,11 +116,27 @@ Common issues:
 
 ### Restarting Quickshell
 
-When hot-reload isn't enough (rare -- usually only after moving/renaming files):
+When hot-reload isn't enough (after adding/moving/renaming files):
 
 ```bash
-just qs-restart          # Kill process; niri respawns it automatically
+just qs-restart          # Kill by cmdline match AND relaunch (niri does NOT respawn)
 ```
+
+Notes learned the hard way (2026-07):
+
+- The nixpkgs quickshell binary's process name is `.quickshell-wrapped`,
+  so `pkill -x quickshell` matches nothing. `qs-restart` kills by full
+  cmdline and relaunches itself.
+- **Stale hot-reload state can produce runtime-only QML errors** like
+  `QQmlVMEMetaObject: ... invalid context` / `ReferenceError: root is
+  not defined` / `TypeError: Property 'x' ... is not a function` in
+  delegate signal handlers, even though the same code is fine on a fresh
+  instance. If such errors appear only at interaction time after a
+  session of many hot-reloads (especially after adding new
+  files/directories), do a full `just qs-restart` before debugging the
+  code.
+- Editing only a service singleton sometimes doesn't trigger the file
+  watcher; `touch _qml/shell.qml` forces a reload.
 
 ### Fern integration
 
@@ -211,6 +227,10 @@ Import components with `import "../components"` from overlay files.
    - Set `_namespace`, `contentTarget`, `slideTarget`
    - Override `_onBeforeShow()` / `_onBeforeClose()` as needed
    - Keep own `FocusScope` + `Connections { target: HookService }` + content
+   - Key handling: OverlayBase provides NO keys (not even Esc). Overlays
+     with a text input hang `Keys.on*` off it (Launcher's TextInput);
+     overlays without one use a zero-size focus Item `forceActiveFocus()`ed
+     in `_onBeforeShow()` (NotificationCenter's `keyHandler`).
 2. Add signal + IPC method in `_qml/services/HookService.qml`
 3. Add `NewOverlay {}` in `_qml/shell.qml`
 4. Check `just qs-log` for errors after hot-reload

@@ -54,10 +54,16 @@ qs-log:
 qs-log-tail lines="30":
     qs log -c garden --tail {{lines}}
 
-# Kill Quickshell (niri auto-respawns it via spawn-at-startup)
+# Restart Quickshell. Note: the nixpkgs binary's comm is
+# ".quickshell-wrapped" so `pkill -x quickshell` never matched, and niri's
+# spawn-at-startup does NOT respawn — so kill by cmdline and relaunch here.
+# The [l] bracket keeps pkill -f from matching this recipe's own sh -c
+# cmdline (which contains the pattern) and SIGTERMing itself.
 qs-restart:
-    pkill -x quickshell || true
-    @echo "quickshell killed; niri will respawn it"
+    pkill -f "quickshel[l] -c garden" || true
+    sleep 1
+    setsid quickshell -c garden >/dev/null 2>&1 &
+    @echo "quickshell restarted"
 
 # Call a garden IPC method (e.g. just qs-ipc toggleSettings)
 qs-ipc method *args:
@@ -66,6 +72,11 @@ qs-ipc method *args:
 # Show available IPC methods
 qs-ipc-show:
     qs ipc -c garden show
+
+# Probe Quickshell service module availability (core-services plan, phase 0)
+qs-probe:
+    qs --version
+    qs -p _qml/dev/probe.qml
 
 # ── Dogfooding ──────────────────────────────────────────────────
 

@@ -17,9 +17,18 @@ Singleton {
     /// Current brightness, 0.0–1.0.
     property real brightness: 1.0
 
+    /// Emitted on brightness changes after the first successful read —
+    /// the OSD trigger. The initial read on login does not fire this.
+    signal stateChanged()
+
+    /// True once the first successful read has landed.
+    property bool _settled: false
+
     /// Tracks whether we already warned about a failing poll, so a
     /// persistent failure doesn't spam the log every 3s.
     property bool _warned: false
+
+    onBrightnessChanged: if (root._settled) root.stateChanged()
 
     Timer {
         interval: 3000
@@ -40,6 +49,7 @@ Singleton {
                     const max = parseInt(m[2], 10)
                     if (!isNaN(current) && !isNaN(max) && max > 0) {
                         root.brightness = Math.max(0, Math.min(1, current / max))
+                        root._settled = true
                     }
                 }
             }

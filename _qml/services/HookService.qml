@@ -4,6 +4,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "."
 import ".."
 import "../compositor"
 
@@ -21,6 +22,9 @@ Singleton {
     signal launcherToggled()
     signal switcherToggled()
     signal settingsToggled()
+    signal notificationsSuppressed(bool suppressed)
+    signal notificationCenterToggled()
+    signal focusSessionChanged(bool active)
 
     // ── IPC handler ─────────────────────────────────────────────────
 
@@ -60,6 +64,36 @@ Singleton {
         function toggleSettings(): string {
             root.settingsToggled();
             return "toggled settings";
+        }
+
+        function suppressNotifications(suppress: bool): string {
+            NotificationService.setSuppressed(suppress);
+            root.notificationsSuppressed(suppress);
+            return suppress ? "notifications suppressed" : "notifications active";
+        }
+
+        function toggleNotifications(): string {
+            NotificationService.toggleSuppressed();
+            const on = NotificationService.globallySuppressed;
+            root.notificationsSuppressed(on);
+            return on ? "notifications suppressed" : "notifications active";
+        }
+
+        function toggleNotificationCenter(): string {
+            root.notificationCenterToggled();
+            return "toggled notification center";
+        }
+
+        function focusStart(): string {
+            NotificationService.setFocus(true);
+            root.focusSessionChanged(true);
+            return "focus session started";
+        }
+
+        function focusEnd(): string {
+            NotificationService.setFocus(false);
+            root.focusSessionChanged(false);
+            return "focus session ended";
         }
     }
 }

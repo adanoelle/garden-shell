@@ -38,19 +38,27 @@ Singleton {
     /// Whether to show extended info (date, etc.) — full mode only.
     readonly property bool showExtended: barMode === "full-bar"
 
-    /// The bar mode string for the current channel.
-    readonly property string barMode: {
+    // ── Mode stack ──────────────────────────────────────────────────
+
+    /// The active channel's mode stack (empty array when unset).
+    readonly property var activeModes: {
         const channel = CompositorService.activeWorkspace;
-        const config = ConfigService.channels?.[channel];
-        const modes = config?.modes;
+        const modes = ConfigService.channels?.[channel]?.modes;
+        return Array.isArray(modes) ? modes : [];
+    }
 
-        if (Array.isArray(modes)) {
-            // Find the first bar-related mode.
-            for (const m of modes) {
-                if (m.endsWith("-bar")) return m;
-            }
+    /// Whether the active channel has the named mode
+    /// (e.g. "suppress-notifications", "mpris-ambient").
+    function hasMode(name: string): bool {
+        return root.activeModes.includes(name);
+    }
+
+    /// The bar mode string for the current channel — first bar-related
+    /// mode in the stack.
+    readonly property string barMode: {
+        for (const m of root.activeModes) {
+            if (m.endsWith("-bar")) return m;
         }
-
         return "standard-bar";
     }
 }
