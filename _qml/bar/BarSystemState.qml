@@ -24,8 +24,7 @@ Row {
 
         Connections {
             target: AudioService
-            function onVolumeChanged() { volSlot._trigger() }
-            function onMutedChanged()  { volSlot._trigger() }
+            function onStateChanged() { volSlot._trigger() }
         }
     }
 
@@ -36,7 +35,7 @@ Row {
 
         Connections {
             target: BrightnessService
-            function onBrightnessChanged() { briSlot._trigger() }
+            function onStateChanged() { briSlot._trigger() }
         }
     }
 }

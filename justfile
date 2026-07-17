@@ -67,6 +67,11 @@ qs-ipc method *args:
 qs-ipc-show:
     qs ipc -c garden show
 
+# Probe Quickshell service module availability (core-services plan, phase 0)
+qs-probe:
+    qs --version
+    qs -p _qml/dev/probe.qml
+
 # ── Dogfooding ──────────────────────────────────────────────────
 
 # Build, test, restart Quickshell, and smoke-test IPC

@@ -35,27 +35,34 @@ notification surface to land on. Notifications are the keystone.
 
 ## Step 0 — Verify the platform (half a session)
 
-- [ ] `qs --version`; confirm which `Quickshell.Services.*` modules are
-      present in the installed build (import each in a scratch QML file,
-      check `just qs-log`).
+- [ ] Run `just qs-probe` — one-shot probe (`_qml/dev/probe.qml`) that
+      imports each required service module and prints ok/MISSING per
+      line, plus `qs --version`.
+- [ ] If `Quickshell.Services.Pipewire` reports MISSING, the installed
+      quickshell was built without pipewire support — fix the package in
+      fern before Phase A's AudioService (already migrated) can work.
 - [ ] Confirm niri + quickshell handle `WlSessionLock` (niri implements
-      `ext-session-lock-v1`).
+      `ext-session-lock-v1`; probe checks the quickshell side).
 - [ ] Note results at the top of this file so later steps don't re-litigate.
 
-## Phase A — Reactive audio plumbing (1 session)
+## Phase A — Reactive audio plumbing (1 session) ✅ implemented
 
 Replace the 500 ms `wpctl` poll in `AudioService.qml` with
 `Quickshell.Services.Pipewire`:
 
-- `Pipewire.defaultAudioSink` + `PwObjectTracker` for bound nodes;
-  expose the same `volume` / `muted` properties so `BarSystemState`
-  doesn't change.
-- Add `AudioService.volumeChanged` / `mutedChanged` semantics suitable
-  for OSD triggering (suppress the initial-state event on startup so the
-  OSD doesn't flash on login).
-- Keep `BrightnessService` (ddcutil) as-is for now, but emit a change
-  signal the OSD can consume. ddcutil polling is slow; brightness OSD can
-  also be triggered optimistically from the keybind path later.
+- [x] `Pipewire.defaultAudioSink` + `PwObjectTracker`; same public
+      `volume` / `muted` properties, plus `ready`, `setVolume()`,
+      `toggleMute()`.
+- [x] `stateChanged()` signal for OSD triggering — guarded by a
+      `_settled` flag so initial-state population on login doesn't fire
+      it. `BrightnessService` gets the same signal + guard (ddcutil
+      polling kept for now; brightness OSD can also trigger
+      optimistically from the keybind path later).
+- [x] `BarSystemState` now listens to `stateChanged()` instead of raw
+      property changes — the bar slots no longer flash on login.
+- [ ] **Verify on hardware:** `just qs-probe`, then `just qs-log` after
+      hot-reload; change volume and confirm the `v{n}` slot brightens and
+      no warnings appear.
 
 Why first: OSD and bar both want event-driven audio; polling can't drive
 a "show OSD on change" surface without heuristics.

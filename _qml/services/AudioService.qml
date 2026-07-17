@@ -3,63 +3,64 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
-import Quickshell.Io
+import Quickshell.Services.Pipewire
 
-/// Reactive volume and mute state via wpctl polling.
+/// Reactive volume and mute state for the default audio sink.
 ///
-/// Polls `wpctl get-volume @DEFAULT_AUDIO_SINK@` every 500ms.
-/// Output format: "Volume: 0.70" or "Volume: 0.70 [MUTED]"
+/// Backed by Quickshell's native Pipewire service — state updates are
+/// event-driven (no polling). The sink node must be bound via
+/// PwObjectTracker before its properties populate.
 Singleton {
     id: root
 
+    /// The default audio sink node (may be null before Pipewire connects).
+    readonly property var sink: Pipewire.defaultAudioSink
+
     /// Current volume, 0.0–1.0.
-    property real volume: 0.0
-
-    /// Whether the sink is muted.
-    property bool muted: false
-
-    /// Tracks whether we already warned about a failing poll, so a
-    /// persistent failure doesn't spam the log every 500ms.
-    property bool _warned: false
-
-    Timer {
-        interval: 500
-        running: true
-        repeat: true
-        triggeredOnStart: true
-        onTriggered: _poll.running = true
+    readonly property real volume: {
+        const v = root.sink?.audio?.volume ?? 0;
+        return Math.max(0, Math.min(1, v));
     }
 
-    Process {
-        id: _poll
-        command: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]
-        stdout: SplitParser {
-            onRead: data => {
-                const m = data.match(/Volume:\s*([\d.]+)(\s+\[MUTED\])?/)
-                if (m) {
-                    const v = parseFloat(m[1])
-                    if (!isNaN(v)) {
-                        root.volume = Math.max(0, Math.min(1, v))
-                        root.muted  = !!m[2]
-                    }
-                }
-            }
-        }
-        stderr: SplitParser {
-            onRead: data => {
-                if (!root._warned) console.warn("AudioService: wpctl:", data)
-            }
-        }
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0) {
-                if (!root._warned) {
-                    console.warn("AudioService: wpctl exited with code", exitCode,
-                                 "— volume state may be stale")
-                    root._warned = true
-                }
-            } else {
-                root._warned = false
-            }
-        }
+    /// Whether the sink is muted.
+    readonly property bool muted: root.sink?.audio?.muted ?? false
+
+    /// Whether the sink is bound and reporting real state.
+    readonly property bool ready: root.sink?.ready ?? false
+
+    /// Emitted on volume/mute changes after startup settles — the OSD
+    /// trigger. Initial state population on login does not fire this.
+    signal stateChanged()
+
+    /// True once the sink's initial state has landed.
+    property bool _settled: false
+
+    // ── Control ─────────────────────────────────────────────────────
+
+    function setVolume(v: real) {
+        if (root.sink?.ready && root.sink.audio)
+            root.sink.audio.volume = Math.max(0, Math.min(1, v));
+    }
+
+    function toggleMute() {
+        if (root.sink?.ready && root.sink.audio)
+            root.sink.audio.muted = !root.sink.audio.muted;
+    }
+
+    // ── Change tracking ─────────────────────────────────────────────
+
+    onVolumeChanged: if (root._settled) root.stateChanged()
+    onMutedChanged:  if (root._settled) root.stateChanged()
+
+    // Settle one tick after the sink reports ready, so the initial
+    // volume/mute population doesn't count as a state change.
+    onReadyChanged: {
+        if (root.ready && !root._settled)
+            Qt.callLater(() => { root._settled = true; });
+    }
+
+    // Bind the sink node so volume/mute properties are populated.
+    PwObjectTracker {
+        objects: [ root.sink ]
     }
 }
