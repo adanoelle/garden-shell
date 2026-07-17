@@ -19,6 +19,8 @@ ShellRoot {
     property var _niri: NiriAdapter
     property var _config: ConfigService
     property var _mode: ModeService
+    property var _audio: AudioService
+    property var _brightness: BrightnessService
 
     Variants {
         model: Quickshell.screens

@@ -101,6 +101,22 @@ fn main() -> Result<()> {
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
+/// Writes `content` to `dest` atomically: writes to a `.tmp` sibling
+/// first, then renames over the destination. A crash mid-write can
+/// never leave a partially-written file at `dest`, which matters both
+/// for `palettes.toml` (source of truth) and for `palettes.json`
+/// (watched by QML via `FileView { watchChanges: true }`).
+fn write_atomic(dest: &Path, content: &str) -> Result<()> {
+    let tmp = dest.with_extension(match dest.extension() {
+        Some(ext) => format!("{}.tmp", ext.to_string_lossy()),
+        None => "tmp".to_string(),
+    });
+    fs::write(&tmp, content).with_context(|| format!("failed to write {}", tmp.display()))?;
+    fs::rename(&tmp, dest)
+        .with_context(|| format!("failed to rename {} → {}", tmp.display(), dest.display()))?;
+    Ok(())
+}
+
 /// Loads and validates a palette collection from a TOML file.
 fn load_palettes(path: &Path) -> Result<PaletteCollection> {
     let col = PaletteCollection::from_file(path)
@@ -200,8 +216,7 @@ fn cmd_apply(palettes_path: Option<&Path>, name: Option<&str>) -> Result<()> {
                     .to_toml_pretty()
                     .map_err(|e| anyhow::anyhow!(e))
                     .context("failed to serialize palettes")?;
-                fs::write(&palettes_file, format!("{toml_out}\n"))
-                    .with_context(|| format!("failed to write {}", palettes_file.display()))?;
+                write_atomic(&palettes_file, &format!("{toml_out}\n"))?;
                 println!("  active palette → \"{n}\"");
             }
             n.to_string()
@@ -240,8 +255,7 @@ fn cmd_apply(palettes_path: Option<&Path>, name: Option<&str>) -> Result<()> {
     let manifest_path = themes_dir.join(".manifest.json");
     let manifest_json =
         serde_json::to_string_pretty(&manifest).context("failed to serialize manifest")?;
-    fs::write(&manifest_path, format!("{manifest_json}\n"))
-        .with_context(|| format!("failed to write {}", manifest_path.display()))?;
+    write_atomic(&manifest_path, &format!("{manifest_json}\n"))?;
     println!("  wrote {}", manifest_path.display());
 
     println!(
@@ -272,8 +286,7 @@ fn write_palette_cache(col: &PaletteCollection, output_root: &Path) -> Result<()
 
     let json = serde_json::to_string_pretty(col).context("failed to serialize palette cache")?;
     let dest = output_root.join("palettes.json");
-    fs::write(&dest, format!("{json}\n"))
-        .with_context(|| format!("failed to write {}", dest.display()))?;
+    write_atomic(&dest, &format!("{json}\n"))?;
 
     println!("  wrote {}", dest.display());
     Ok(())
@@ -294,8 +307,7 @@ fn write_themes(palette: &Palette, output_root: &Path) -> Result<Vec<PathBuf>> {
                 .with_context(|| format!("failed to create directory {}", parent.display()))?;
         }
 
-        fs::write(&dest, &content)
-            .with_context(|| format!("failed to write {}", dest.display()))?;
+        write_atomic(&dest, &content)?;
 
         println!("  wrote {}", dest.display());
         written.push(dest);
@@ -402,6 +414,9 @@ fn reload_kitty(themes_dir: &Path) {
         theme_file.to_string_lossy().into_owned(),
     ]);
 
+    // Best-effort: only works when run from inside a kitty instance with
+    // remote control enabled, so a failure here alone is not warned about —
+    // the SIGUSR1 below is the reload path that must succeed.
     let _ = Command::new("kitty")
         .args(&args)
         .stdin(Stdio::null())
@@ -410,39 +425,44 @@ fn reload_kitty(themes_dir: &Path) {
         .status();
 
     // Signal all kitty processes to reload config (picks up new include).
-    let sigusr1 = Command::new("pkill")
+    match Command::new("pkill")
         .args(["-USR1", "kitty"])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .status();
-
-    if matches!(sigusr1, Ok(s) if s.success()) {
-        println!("  reloaded kitty");
+        .status()
+    {
+        Ok(s) if s.success() => println!("  reloaded kitty"),
+        // pkill exits 1 when no process matched — kitty simply isn't running.
+        Ok(s) if s.code() == Some(1) => {}
+        Ok(s) => eprintln!("  warning: kitty reload failed: pkill exited with {s}"),
+        Err(e) => eprintln!("  warning: kitty reload failed: could not run pkill: {e}"),
     }
 }
 
 /// Sources the fish theme file to update universal variables.
 ///
-/// Uses `fish -c 'source <file>'` which sets universal variables that
-/// propagate to all running fish sessions immediately.
+/// Uses `fish -c 'source $argv[1]' <file>` which sets universal
+/// variables that propagate to all running fish sessions immediately.
+/// The path is passed as an argument, never interpolated into the
+/// command string, so it needs no escaping.
 fn reload_fish(themes_dir: &Path) {
     let theme_file = themes_dir.join("fish/garden-theme.fish");
     if !theme_file.exists() {
         return;
     }
 
-    // Escape single quotes for the fish -c shell string.
-    let escaped = theme_file.display().to_string().replace('\'', "\\'");
-    let status = Command::new("fish")
-        .args(["-c", &format!("source '{escaped}'")])
+    match Command::new("fish")
+        .args(["-c", "source $argv[1]"])
+        .arg(&theme_file)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .status();
-
-    if matches!(status, Ok(s) if s.success()) {
-        println!("  reloaded fish");
+        .status()
+    {
+        Ok(s) if s.success() => println!("  reloaded fish"),
+        Ok(s) => eprintln!("  warning: fish reload failed: fish exited with {s}"),
+        Err(e) => eprintln!("  warning: fish reload failed: could not run fish: {e}"),
     }
 }
 
@@ -456,9 +476,30 @@ fn reload_kakoune(themes_dir: &Path) {
         return;
     }
 
+    // The path is sent inside a kakoune single-quoted string (where only
+    // `'` needs doubling), wrapped in a `%{ }` block. A brace in the path
+    // would unbalance the outer block, so bail out on that (pathological)
+    // case rather than send a corrupt command.
+    let path_str = theme_file.display().to_string();
+    if path_str.contains('{') || path_str.contains('}') || path_str.contains('\n') {
+        eprintln!("  warning: kakoune reload skipped: theme path contains braces or newline");
+        return;
+    }
+    let quoted = path_str.replace('\'', "''");
+
     let sessions = match Command::new("kak").arg("-l").output() {
         Ok(output) if output.status.success() => output,
-        _ => return,
+        Ok(output) => {
+            eprintln!(
+                "  warning: kakoune reload failed: `kak -l` exited with {}",
+                output.status
+            );
+            return;
+        }
+        Err(e) => {
+            eprintln!("  warning: kakoune reload failed: could not run kak: {e}");
+            return;
+        }
     };
 
     let session_list = String::from_utf8_lossy(&sessions.stdout);
@@ -478,13 +519,19 @@ fn reload_kakoune(themes_dir: &Path) {
             .spawn()
             .and_then(|mut child| {
                 if let Some(ref mut stdin) = child.stdin {
-                    let _ = writeln!(stdin, "try %{{ source {} }}", theme_file.display());
+                    let _ = writeln!(stdin, "try %{{ source '{quoted}' }}");
                 }
                 child.wait()
             });
 
-        if matches!(status, Ok(s) if s.success()) {
-            reloaded += 1;
+        match status {
+            Ok(s) if s.success() => reloaded += 1,
+            Ok(s) => eprintln!(
+                "  warning: kakoune session '{session}' reload failed: kak exited with {s}"
+            ),
+            Err(e) => {
+                eprintln!("  warning: kakoune session '{session}' reload failed: {e}")
+            }
         }
     }
 

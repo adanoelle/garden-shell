@@ -1,7 +1,7 @@
 import QtQuick
 import Quickshell
-import Quickshell.Wayland
 import ".."
+import "../components"
 import "../compositor"
 import "../services"
 
@@ -9,28 +9,15 @@ import "../services"
 ///
 /// Shows all workspaces with their windows. Triggered via
 /// `qs ipc call garden toggleSwitcher` or HookService.switcherToggled signal.
-PanelWindow {
+OverlayBase {
     id: switcher
 
-    anchors {
-        top: true
-        bottom: true
-        left: true
-        right: true
-    }
-
-    visible: false
-    color: "transparent"
-    focusable: true
-    exclusiveZone: 0
-
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
-    WlrLayershell.namespace: "garden-switcher"
+    _namespace:    "garden-switcher"
+    contentTarget: content
+    slideTarget:   contentSlide
 
     // ── State ─────────────────────────────────────────────────────────
 
-    property bool _open: false
     property int _selectedIndex: 0
 
     // ── Toggle ────────────────────────────────────────────────────────
@@ -40,70 +27,16 @@ PanelWindow {
         function onSwitcherToggled() { switcher._toggle(); }
     }
 
-    function _toggle() {
-        if (_open) _close();
-        else _show();
-    }
+    // ── Show-init hook ────────────────────────────────────────────────
 
-    function _show() {
-        _open = true;
-        content.opacity = 0;
-        contentSlide.y = 20;
+    function _onBeforeShow() {
         // Pre-select the active workspace.
         const ws = CompositorService.workspaces;
-        _selectedIndex = 0;
+        switcher._selectedIndex = 0;
         for (let i = 0; i < ws.length; i++) {
-            if (ws[i].active) { _selectedIndex = i; break; }
+            if (ws[i].active) { switcher._selectedIndex = i; break; }
         }
-        visible = true;
         keyHandler.forceActiveFocus();
-        showAnim.start();
-    }
-
-    function _close() {
-        if (!_open) return;
-        hideAnim.start();
-    }
-
-    function _switchToSelected() {
-        const ws = CompositorService.workspaces;
-        if (_selectedIndex >= 0 && _selectedIndex < ws.length) {
-            CompositorService.focusWorkspace(ws[_selectedIndex].name);
-        }
-        _close();
-    }
-
-    // ── Animations ────────────────────────────────────────────────────
-
-    ParallelAnimation {
-        id: showAnim
-
-        NumberAnimation {
-            target: content; property: "opacity"
-            to: 1; duration: 200; easing.type: Easing.OutCubic
-        }
-        NumberAnimation {
-            target: contentSlide; property: "y"
-            to: 0; duration: 200; easing.type: Easing.OutCubic
-        }
-    }
-
-    ParallelAnimation {
-        id: hideAnim
-
-        NumberAnimation {
-            target: content; property: "opacity"
-            to: 0; duration: 200; easing.type: Easing.InCubic
-        }
-        NumberAnimation {
-            target: contentSlide; property: "y"
-            to: 20; duration: 200; easing.type: Easing.InCubic
-        }
-
-        onFinished: {
-            switcher._open = false;
-            switcher.visible = false;
-        }
     }
 
     // ── Keyboard ──────────────────────────────────────────────────────
@@ -125,15 +58,6 @@ PanelWindow {
         }
 
         Keys.onReturnPressed: switcher._switchToSelected()
-    }
-
-    // ── Backdrop ──────────────────────────────────────────────────────
-
-    DitherOverlay { density: "dense" }
-
-    MouseArea {
-        anchors.fill: parent
-        onClicked: switcher._close()
     }
 
     // ── Content ───────────────────────────────────────────────────────
@@ -276,24 +200,19 @@ PanelWindow {
             }
         }
 
-        // Hint text with background for readability over dither.
-        Rectangle {
+        HintLabel {
             anchors.horizontalCenter: parent.horizontalCenter
-            width: hintText.width + 16
-            height: hintText.height + 8
-            radius: 3
-            color: Theme.base
-            border.color: Theme.borderSub
-            border.width: 1
-
-            Text {
-                id: hintText
-                anchors.centerIn: parent
-                text: "Esc close  \u00b7  \u2191\u2193 select  \u00b7  \u21b5 switch"
-                color: Theme.text3
-                font.family: Theme.monoFont
-                font.pixelSize: 11
-            }
+            text: "Esc close  \u00b7  \u2191\u2193 select  \u00b7  \u21b5 switch"
         }
+    }
+
+    // ── Switch to selected workspace ──────────────────────────────────
+
+    function _switchToSelected() {
+        const ws = CompositorService.workspaces;
+        if (_selectedIndex >= 0 && _selectedIndex < ws.length) {
+            CompositorService.focusWorkspace(ws[_selectedIndex].name);
+        }
+        _close();
     }
 }

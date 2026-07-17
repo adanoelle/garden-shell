@@ -77,7 +77,11 @@ Item {
                 clip: true
 
                 onTextChanged: {
-                    if (!root._updating && root._valid) {
+                    // Test the text directly rather than reading root._valid:
+                    // that binding may not have re-evaluated yet when this
+                    // handler runs, so it can be stale (e.g. backspacing from
+                    // a valid color would emit the now-invalid text).
+                    if (!root._updating && /^#[0-9a-fA-F]{6}$/.test(text)) {
                         root.colorEdited(root.colorKey, text);
                     }
                 }

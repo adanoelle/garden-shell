@@ -57,6 +57,9 @@ PanelWindow {
             Layout.fillWidth: true
         }
 
+        // Volume and brightness indicators.
+        BarSystemState {}
+
         // Clock.
         BarClock {}
     }

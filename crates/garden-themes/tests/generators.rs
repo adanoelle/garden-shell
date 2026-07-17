@@ -778,9 +778,18 @@ fn niri_output_has_expected_structure() {
     let niri = generators::niri::Niri;
     let output = niri.generate(palette);
 
-    assert!(output.contains("background-color"), "missing background-color");
-    assert!(!output.contains("layout {"), "layout block should not be in include");
-    assert!(output.contains("window-rule {"), "missing window-rule block");
+    assert!(
+        output.contains("background-color"),
+        "missing background-color"
+    );
+    assert!(
+        !output.contains("layout {"),
+        "layout block should not be in include"
+    );
+    assert!(
+        output.contains("window-rule {"),
+        "missing window-rule block"
+    );
     assert!(
         output.contains("match title=\"frontier\""),
         "missing HPC window rule"

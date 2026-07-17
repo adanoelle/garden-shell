@@ -1,36 +1,22 @@
 import QtQuick
 import Quickshell
-import Quickshell.Wayland
 import ".."
+import "../components"
 import "../services"
 
 /// Settings panel overlay (Super+,).
 ///
 /// Full-screen overlay with dithered backdrop, tab bar (palette / keybinds),
-/// and scrollable content area. Follows the same pattern as Launcher.qml
-/// and ChannelSwitcher.qml.
-PanelWindow {
+/// and scrollable content area.
+OverlayBase {
     id: settings
 
-    anchors {
-        top: true
-        bottom: true
-        left: true
-        right: true
-    }
-
-    visible: false
-    color: "transparent"
-    focusable: true
-    exclusiveZone: 0
-
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
-    WlrLayershell.namespace: "garden-settings"
+    _namespace:    "garden-settings"
+    contentTarget: content
+    slideTarget:   contentSlide
 
     // ── State ───────────────────────────────────────────────────────
 
-    property bool _open: false
     property string _activeTab: "palette"
 
     // ── Toggle ──────────────────────────────────────────────────────
@@ -40,59 +26,16 @@ PanelWindow {
         function onSettingsToggled() { settings._toggle(); }
     }
 
-    function _toggle() {
-        if (_open) _close();
-        else _show();
-    }
+    // ── Lifecycle hooks ─────────────────────────────────────────────
 
-    function _show() {
-        _open = true;
-        content.opacity = 0;
-        contentSlide.y = 20;
-        _activeTab = "palette";
-        visible = true;
+    function _onBeforeShow() {
+        settings._activeTab = "palette";
         keyHandler.forceActiveFocus();
-        showAnim.start();
     }
 
-    function _close() {
-        if (!_open) return;
+    function _onBeforeClose() {
         // Auto-discard unsaved palette edits.
         paletteEditor._discardEdits();
-        hideAnim.start();
-    }
-
-    // ── Animations ──────────────────────────────────────────────────
-
-    ParallelAnimation {
-        id: showAnim
-
-        NumberAnimation {
-            target: content; property: "opacity"
-            to: 1; duration: 200; easing.type: Easing.OutCubic
-        }
-        NumberAnimation {
-            target: contentSlide; property: "y"
-            to: 0; duration: 200; easing.type: Easing.OutCubic
-        }
-    }
-
-    ParallelAnimation {
-        id: hideAnim
-
-        NumberAnimation {
-            target: content; property: "opacity"
-            to: 0; duration: 200; easing.type: Easing.InCubic
-        }
-        NumberAnimation {
-            target: contentSlide; property: "y"
-            to: 20; duration: 200; easing.type: Easing.InCubic
-        }
-
-        onFinished: {
-            settings._open = false;
-            settings.visible = false;
-        }
     }
 
     // ── Keyboard ────────────────────────────────────────────────────
@@ -108,15 +51,6 @@ PanelWindow {
             else
                 settings._close();
         }
-    }
-
-    // ── Backdrop ────────────────────────────────────────────────────
-
-    DitherOverlay { density: "dense" }
-
-    MouseArea {
-        anchors.fill: parent
-        onClicked: settings._close()
     }
 
     // ── Content ─────────────────────────────────────────────────────
@@ -289,24 +223,9 @@ PanelWindow {
             }
         }
 
-        // Hint text.
-        Rectangle {
+        HintLabel {
             anchors.horizontalCenter: parent.horizontalCenter
-            width: hintText.width + 16
-            height: hintText.height + 8
-            radius: 3
-            color: Theme.base
-            border.color: Theme.borderSub
-            border.width: 1
-
-            Text {
-                id: hintText
-                anchors.centerIn: parent
-                text: "Esc close"
-                color: Theme.text3
-                font.family: Theme.monoFont
-                font.pixelSize: 11
-            }
+            text: "Esc close"
         }
     }
 }
