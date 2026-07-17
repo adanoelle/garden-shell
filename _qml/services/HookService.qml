@@ -25,6 +25,8 @@ Singleton {
     signal notificationsSuppressed(bool suppressed)
     signal notificationCenterToggled()
     signal focusSessionChanged(bool active)
+    signal lockRequested()
+    signal powerMenuToggled()
 
     // ── IPC handler ─────────────────────────────────────────────────
 
@@ -88,6 +90,16 @@ Singleton {
             NotificationService.setFocus(true);
             root.focusSessionChanged(true);
             return "focus session started";
+        }
+
+        function lock(): string {
+            root.lockRequested();
+            return "locking session";
+        }
+
+        function togglePowerMenu(): string {
+            root.powerMenuToggled();
+            return "toggled power menu";
         }
 
         function focusEnd(): string {

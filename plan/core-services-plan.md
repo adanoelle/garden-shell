@@ -182,9 +182,51 @@ step: verify no other daemon is enabled in fern before switching.
 > callable from the fern keybind to feel responsive — deferred to a
 > follow-up (plan §10 noted this risk).
 
-## Phase D — Lock screen + power menu (2 sessions)
+## Phase D — Lock screen + power menu (2 sessions) ✅ implemented 2026-07-17
 
 Work-machine requirements; do before the first day badge-in if possible.
+
+> **Landed:** `lock/LockScreen.qml` (Scope: WlSessionLock + PamContext +
+> shared auth state) + `lock/LockSurface.qml` (per-screen
+> WlSessionLockSurface) — the third window kind, neither OverlayBase nor
+> the non-modal PanelWindow pattern. `overlays/PowerMenu.qml`
+> (OverlayBase, zero-size focus-item key idiom). IPC `lock` +
+> `togglePowerMenu`; keybinds Super+Escape (power menu) and Super+Alt+L
+> (direct lock — added beyond plan) in fern + `_config/niri.kdl`.
+>
+> **Lockout-safe rollout worked as designed:** PAM flow proven first in
+> a throwaway window (`_qml/dev/pamtest.qml`, kept for reuse) —
+> non-interactive wrong-password probe (`PAMTEST_AUTO=bad`) then
+> interactive good-password — before `locked: true` was ever wired.
+> Spare-TTY lifeboat verified (ctl+opt+fn+F2 on the mac-layout board;
+> note: SSH here is key-only, so the TTY is the primary lifeboat).
+> Full cycle verified on hardware: lock → wrong password (urgent border
+> + shake, field clears) → right password → unlock; suspend →
+> before-sleep lock → resume → unlock also verified.
+>
+> **Decisions / deviations from spec §7 (approved during test):**
+> - PAM config is `"swaylock"` (auth-only pam_unix stack in
+>   /etc/pam.d/swaylock) — not "login", which drags in loginuid/systemd
+>   session modules a locker shouldn't run.
+> - Outer 1px frame inset 24px **removed** — read as clutter on hardware.
+> - Full-opacity cream "lock" dither competed with the (same-colored)
+>   text: dither dimmed to 0.4 opacity, and the clock/login block sits on
+>   a base-deep clearing card with a 1px border-sub border (masks dots
+>   behind text; reads as a panel).
+> - Power menu destructive confirm: second Enter, label swaps to
+>   `confirm <action>?` in urgent; Esc / moving selection cancels the
+>   pending confirm. logout runs `niri msg action quit
+>   --skip-confirmation` (the menu already confirmed — avoids niri's own
+>   double prompt).
+> - `LockScreen.lock()` is idempotent; do NOT hot-reload lock QML while
+>   locked (under ext-session-lock a dead lock client leaves the session
+>   locked — recovery ladder documented in the session, TTY → pkill →
+>   relaunch quickshell → re-auth).
+>
+> **D2 (fern):** `services.swayidle` in the niri aspect's homeManager
+> section — 600 s idle → `qs -c garden ipc call garden lock`, plus
+> `before-sleep` event (logind inhibitor) for lock-before-suspend.
+> Deployed with `just switch`.
 
 **D1. `lock/LockScreen.qml`** using `WlSessionLock` +
 `Quickshell.Services.Pam` for auth:
