@@ -64,6 +64,8 @@ binds {
     Mod+Comma { spawn "sh" "-c" "qs -c garden ipc call garden toggleSettings"; }
     Mod+Shift+N { spawn "sh" "-c" "qs -c garden ipc call garden toggleNotifications"; }
     Mod+Shift+M { spawn "sh" "-c" "qs -c garden ipc call garden toggleNotificationCenter"; }
+    Mod+Escape { spawn "sh" "-c" "qs -c garden ipc call garden togglePowerMenu"; }
+    Mod+Alt+L { spawn "sh" "-c" "qs -c garden ipc call garden lock"; }
 
     // ── Navigation ────────────────────────────────────────────────
     Mod+H { focus-column-left; }

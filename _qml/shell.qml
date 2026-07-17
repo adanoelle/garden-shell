@@ -2,6 +2,7 @@ import Quickshell
 import Quickshell.Wayland
 import "bar"
 import "compositor"
+import "lock"
 import "notifications"
 import "osd"
 import "overlays"
@@ -39,8 +40,12 @@ ShellRoot {
     ChannelSwitcher {}
     Settings {}
     NotificationCenter {}
+    PowerMenu {}
 
     // Non-modal windows (no focus grab, exclusiveZone 0).
     NotificationPopups {}
     Osd {}
+
+    // Session lock (WlSessionLock — inert until HookService.lockRequested).
+    LockScreen {}
 }
