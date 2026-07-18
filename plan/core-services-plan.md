@@ -250,7 +250,58 @@ shutdown`, arrow-key navigation, destructive actions require a second
 Enter (confirm state swaps label to `confirm shutdown?` in `urgent`).
 IPC `togglePowerMenu`, keybind Super+Escape.
 
-## Phase E — Bar system state: battery, network, tray (2–3 sessions)
+## Phase E — Bar system state: battery, network, tray (2–3 sessions) ✅ implemented 2026-07-17
+
+> **Landed:** `services/BatteryService.qml`, `services/NetworkService.qml`,
+> `panels/TrayPanel.qml` + battery/network/tray indicators in
+> `BarSystemState`. Prerequisite `services.upower.enable` in fern's niri
+> aspect (UPower is D-Bus demand-activated; verified via `busctl`).
+> New IPC: `toggleTray`, plus warm-up riders `showBrightnessOsd` /
+> `stepBrightnessOsd` (optimistic OSD before the ~200 ms ddcutil step;
+> `BrightnessService.setSilently` keeps the 3 s poll from re-showing
+> it). Fern brightness keybinds now call the IPC first, mirrored in
+> `_config/niri.kdl`. Other riders: OSD window shrunk to the 280 px
+> card (was a full-width click-eating strip); PowerMenu flashes its
+> border urgent for 1.2 s on nonzero exit (polkit denial isn't silent).
+>
+> **Anchored-panel pattern (fourth window kind — TrayPanel is the
+> reference):** NOT OverlayBase. A transparent full-surface PanelWindow
+> (`exclusiveZone: 0`, overlay layer) acts as a click-outside catcher;
+> the content card anchors to a bar-relative corner
+> (`ConfigService.barPosition`-aware). Pointer-only — no keyboard grab,
+> no dimming. NetworkPanel and the calendar glance should reuse this.
+>
+> **Decisions / deviations:**
+> - Battery bar slot is a persistent `text-3` percentage (`+` suffix on
+>   AC, urgent ≤15 % discharging) — deliberately NOT the v/b
+>   BarStateSlot flash idiom: charge is glanceable state, not an event.
+>   Low warning at ≤10 %, once per discharge cycle (rearms on AC), sent
+>   critical via new `NotificationService.sendSynthetic(summary, body,
+>   urgency)` — shim factory + urgency override; synthetics bypass the
+>   queue by construction. This machine has no battery: hide path
+>   verified live (`isLaptopBattery: false` probe); battery-present
+>   rendering follows the documented 0–1 `percentage` and awaits laptop
+>   hardware.
+> - Network: `nmcli monitor` long-lived Process → 300 ms debounced
+>   re-query (`nmcli -t -f TYPE,DEVICE,NAME connection show --active`);
+>   monitor respawns 3 s after exit (NM restart). Bar text: SSID /
+>   `eth` / `offline` in text-3, VPN as accent dot. Tailscale check
+>   rides the same trigger via a sh guard that prints `{}` when the
+>   binary is missing (not installed on this box — path dormant).
+>   NetworkPanel deferred as planned; bar indicator is the deliverable.
+> - Tray menus are rendered as themed text rows via `QsMenuOpener`
+>   drill-down (`‹ back`, `›` submenus, `[x]`/`(·)` check prefixes,
+>   320 px elide) — NOT `SystemTrayItem.display()`: platform menus need
+>   `//@ pragma UseQApplication` and render unstyled (tried, reverted).
+>   Menu-only appindicator items (nm-applet exposes no `Activate`) open
+>   the menu on left click too.
+> - Positioner lesson: never `width: parent.width` in a Column delegate
+>   — the positioner sizes FROM child widths; the loop blew the menu
+>   card past the screen edge. Separator rules bind the Column's width
+>   instead (one-way).
+> - Tested with `nm-applet --indicator` via `nix shell`
+>   (blueman-applet hides its SNI when no bluetooth adapter exists).
+>   No new keybinds — tray is click/IPC-driven.
 
 **E1. Battery (UPower).** Not in the original spec (desktop-era doc) —
 added for the ORNL laptop:

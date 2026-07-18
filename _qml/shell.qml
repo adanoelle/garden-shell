@@ -6,6 +6,7 @@ import "lock"
 import "notifications"
 import "osd"
 import "overlays"
+import "panels"
 import "services"
 
 /// Garden Shell — root entry point.
@@ -24,6 +25,8 @@ ShellRoot {
     property var _mode: ModeService
     property var _audio: AudioService
     property var _brightness: BrightnessService
+    property var _battery: BatteryService
+    property var _network: NetworkService
     property var _notifications: NotificationService
 
     Variants {
@@ -45,6 +48,9 @@ ShellRoot {
     // Non-modal windows (no focus grab, exclusiveZone 0).
     NotificationPopups {}
     Osd {}
+
+    // Anchored panels (click-outside dismiss, pointer-only).
+    TrayPanel {}
 
     // Session lock (WlSessionLock — inert until HookService.lockRequested).
     LockScreen {}

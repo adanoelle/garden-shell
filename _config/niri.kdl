@@ -67,6 +67,10 @@ binds {
     Mod+Escape { spawn "sh" "-c" "qs -c garden ipc call garden togglePowerMenu"; }
     Mod+Alt+L { spawn "sh" "-c" "qs -c garden ipc call garden lock"; }
 
+    // Brightness — optimistic garden OSD first, then ddcutil (slow ~200ms)
+    XF86MonBrightnessUp   { spawn "sh" "-c" "qs -c garden ipc call garden stepBrightnessOsd 5; exec ddcutil setvcp 10 + 5"; }
+    XF86MonBrightnessDown { spawn "sh" "-c" "qs -c garden ipc call garden stepBrightnessOsd -5; exec ddcutil setvcp 10 - 5"; }
+
     // ── Navigation ────────────────────────────────────────────────
     Mod+H { focus-column-left; }
     Mod+J { focus-window-down; }

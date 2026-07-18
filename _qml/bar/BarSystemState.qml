@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell.Services.SystemTray
 import ".."
 import "../services"
 
@@ -48,6 +49,67 @@ Row {
         Connections {
             target: BrightnessService
             function onStateChanged() { briSlot._trigger() }
+        }
+    }
+
+    // Network (Phase E) — text-first status: SSID on wifi, "eth" on
+    // wired, "offline" when disconnected. Accent dot = VPN/tailscale.
+    Row {
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: 5
+
+        Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            width: 5
+            height: 5
+            radius: 2.5
+            visible: NetworkService.vpnActive
+            color: Theme.accent
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: NetworkService.connectionType === "wifi"
+                      ? NetworkService.ssid
+                      : NetworkService.connectionType === "wired"
+                          ? "eth" : "offline"
+            font.family: Theme.monoFont
+            font.pixelSize: 11
+            color: Theme.text3
+        }
+    }
+
+    // Battery (Phase E) — persistent text-3 percentage, unlike the
+    // ambient v/b slots: charge is glanceable state, not an event.
+    // Urgent below 15% while discharging; `+` suffix on AC. Hidden
+    // entirely when the machine has no battery.
+    Text {
+        anchors.verticalCenter: parent.verticalCenter
+        visible: BatteryService.available
+        text: Math.round(BatteryService.percentage * 100) + "%"
+              + (BatteryService.charging ? "+" : "")
+        font.family: Theme.monoFont
+        font.pixelSize: 11
+        color: BatteryService.low ? Theme.urgent : Theme.text3
+    }
+
+    // Tray (Phase E) — single dot when tray items exist (no icon
+    // grid); click opens the TrayPanel dropdown. Urgent when any item
+    // needs attention.
+    Rectangle {
+        anchors.verticalCenter: parent.verticalCenter
+        width: 5
+        height: 5
+        radius: 2.5
+        visible: SystemTray.items.values.length > 0
+        color: SystemTray.items.values.some(
+                   i => i.status === Status.NeedsAttention)
+                   ? Theme.urgent : Theme.text3
+
+        MouseArea {
+            anchors.fill: parent
+            anchors.margins: -4   // clickable halo around the 5px dot
+            onClicked: HookService.trayToggled()
         }
     }
 }
