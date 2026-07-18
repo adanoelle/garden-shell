@@ -27,6 +27,8 @@ Singleton {
     signal focusSessionChanged(bool active)
     signal lockRequested()
     signal powerMenuToggled()
+    signal brightnessOsdRequested(real value)
+    signal trayToggled()
 
     // ── IPC handler ─────────────────────────────────────────────────
 
@@ -100,6 +102,31 @@ Singleton {
         function togglePowerMenu(): string {
             root.powerMenuToggled();
             return "toggled power menu";
+        }
+
+        function toggleTray(): string {
+            root.trayToggled();
+            return "toggled tray panel";
+        }
+
+        /// Show the brightness OSD immediately at an absolute percent
+        /// (0–100) — optimistic path for external brightness changes.
+        function showBrightnessOsd(value: real): string {
+            const frac = Math.max(0, Math.min(1, value / 100));
+            BrightnessService.setSilently(frac);
+            root.brightnessOsdRequested(frac);
+            return "brightness osd " + Math.round(frac * 100) + "%";
+        }
+
+        /// Relative variant for keybinds that step the hardware with
+        /// ddcutil "+ 5"/"- 5": computes new value from the shell's
+        /// known brightness, shows the OSD, returns the new percent.
+        function stepBrightnessOsd(delta: real): string {
+            const frac = Math.max(0, Math.min(1,
+                BrightnessService.brightness + delta / 100));
+            BrightnessService.setSilently(frac);
+            root.brightnessOsdRequested(frac);
+            return "brightness osd " + Math.round(frac * 100) + "%";
         }
 
         function focusEnd(): string {

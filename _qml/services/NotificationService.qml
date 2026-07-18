@@ -185,6 +185,16 @@ Singleton {
         );
     }
 
+    /// Shell-originated popup (battery warnings etc). Synthetics bypass
+    /// the queue by construction — consistent with the break-card and
+    /// critical-bypass precedents. Critical urgency also disables
+    /// auto-expiry via timeoutFor() and styles urgent on the card.
+    function sendSynthetic(summary, body, urgency) {
+        const n = root._makeSynthetic(summary, body, []);
+        if (urgency !== undefined) n.urgency = urgency;
+        root.popups = root.popups.concat([n]);
+    }
+
     // ── Server ──────────────────────────────────────────────────────
 
     NotificationServer {

@@ -57,6 +57,19 @@ PanelWindow {
         }
     }
 
+    // Optimistic path: fern brightness keybinds call showBrightnessOsd /
+    // stepBrightnessOsd via IPC so the OSD reacts instantly instead of
+    // waiting out the 3s ddcutil poll.
+    Connections {
+        target: HookService
+        function onBrightnessOsdRequested(value) {
+            root._source = "brightness";
+            root._value = value;
+            root._muted = false;
+            root._show();
+        }
+    }
+
     // ── Show / auto-dismiss ─────────────────────────────────────────
 
     function _show() {
@@ -72,10 +85,12 @@ PanelWindow {
 
     // ── Window setup ────────────────────────────────────────────────
 
+    // Bottom-anchored only: with neither left nor right anchored the
+    // window is just the 280px card, horizontally centered by the
+    // compositor — a full-width strip would eat clicks along the whole
+    // screen bottom while visible.
     anchors {
         bottom: true
-        left: true
-        right: true
     }
 
     margins.bottom: root.edgeMargin

@@ -34,6 +34,10 @@ OverlayBase {
     /// Index of the destructive action awaiting its second Enter (-1 = none).
     property int _confirmIndex: -1
 
+    /// True briefly after a spawned command fails (e.g. polkit denial) —
+    /// flashes the panel border urgent so failures aren't silent.
+    property bool _failed: false
+
     // ── Toggle ────────────────────────────────────────────────────────
 
     Connections {
@@ -46,6 +50,7 @@ OverlayBase {
     function _onBeforeShow() {
         menu._selectedIndex = 0;
         menu._confirmIndex = -1;
+        menu._failed = false;
         keyHandler.forceActiveFocus();
     }
 
@@ -84,6 +89,23 @@ OverlayBase {
     Process {
         id: actionProcess
         running: false
+
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode === 0) return;
+            console.warn("PowerMenu: command failed (exit " + exitCode + "):",
+                         actionProcess.command.join(" "));
+            if (menu._open) {
+                menu._confirmIndex = -1;
+                menu._failed = true;
+                failedClear.restart();
+            }
+        }
+    }
+
+    Timer {
+        id: failedClear
+        interval: 1200
+        onTriggered: menu._failed = false
     }
 
     function _run(cmd) {
@@ -145,7 +167,7 @@ OverlayBase {
             width: actionRow.implicitWidth + 48
             height: 52
             color: Theme.base
-            border.color: Theme.border
+            border.color: menu._failed ? Theme.urgent : Theme.border
             border.width: 1
 
             Row {

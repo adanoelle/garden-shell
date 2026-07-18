@@ -28,7 +28,20 @@ Singleton {
     /// persistent failure doesn't spam the log every 3s.
     property bool _warned: false
 
-    onBrightnessChanged: if (root._settled) root.stateChanged()
+    /// Guard for setSilently — suppresses stateChanged for optimistic
+    /// updates whose caller shows the OSD itself.
+    property bool _silent: false
+
+    onBrightnessChanged: if (root._settled && !root._silent) root.stateChanged()
+
+    /// Update brightness state from an optimistic external source (IPC)
+    /// without firing stateChanged. Keeps the next ddcutil poll from
+    /// re-showing the OSD when it confirms the same value.
+    function setSilently(value) {
+        root._silent = true;
+        root.brightness = Math.max(0, Math.min(1, value));
+        root._silent = false;
+    }
 
     Timer {
         interval: 3000
