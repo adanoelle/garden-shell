@@ -357,6 +357,14 @@ added for the ORNL laptop:
 - Focus-session integration (Super Productivity IPC) — rides on the
   Phase B suppression switch once the planner is in daily use.
 - Tooltips, network/bluetooth deep panels, MediaControls scratchpad.
+- **Network panel** (2026-07-18): make the bar's `eth`/SSID label
+  clickable → anchored `panels/NetworkPanel.qml` following the TrayPanel
+  pattern (click-outside catcher, bar-corner card). List connections
+  from `nmcli` via NetworkService, connect/disconnect + wifi scan
+  actions. The old Hyprland-era fern-shell had a network menu; it never
+  made the jump to garden — Phase E's indicator is deliberately
+  text-only. Touches `BarSystemState.qml`, new `NetworkPanel.qml`,
+  `HookService.qml` (signal + IPC), `shell.qml`.
 
 ## Suggested order & effort
 
