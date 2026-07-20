@@ -24,7 +24,31 @@
       "Bash(git:*)",
       "Bash(test:*)",
       "Bash(just qs-log-tail:*)",
-      "Bash(env:*)"
+      "Bash(env:*)",
+      "Bash(wpctl get-volume:*)",
+      "Bash(wpctl set-volume:*)",
+      "Bash(busctl:*)",
+      "Bash(command -v notify-send)",
+      "Bash(notify-send -a \"garden-test\" \"First card\" \"This is the body text of a test notification.\" && sleep 0.2 && notify-send -a \"garden-test\" \"Second card\" \"Burst sibling — should stagger 60ms.\" && sleep 2 && just qs-log-tail 8 2>&1)",
+      "Bash(head:*)",
+      "Bash(touch _qml/shell.qml && sleep 3 && notify-send -a \"garden-test\" \"Debug probe\" \"where does it break\" && sleep 1 && just qs-log-tail 12 2>&1)",
+      "Bash(notify-send -a \"garden-test\" \"layer check\" \"x\" && sleep 0.5 && niri msg layers 2>&1)",
+      "Bash(notify-send:*)",
+      "Bash(just qs-ipc:*)",
+      "Bash(just qs-restart && sleep 4 && just qs-log-tail 6 2>&1)",
+      "Bash(sleep 3 && pgrep -x quickshell && just qs-log-tail 10 2>&1)",
+      "Bash(wpctl set-mute:*)",
+      "Bash(env PAMTEST_AUTO=bad:*)",
+      "Bash(busctl list:*)",
+      "Bash(tailscale status:*)",
+      "Bash(command -v nmcli)",
+      "Bash(systemctl:*)",
+      "Bash(niri msg:*)",
+      "Bash(grim:*)",
+      "Bash(command:*)",
+      "Bash(xdg-user-dir PICTURES:*)",
+      "Bash(slurp:*)",
+      "Bash(wl-paste --list-types)"
     ]
   }
 }
