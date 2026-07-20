@@ -54,28 +54,43 @@ Row {
 
     // Network (Phase E) — text-first status: SSID on wifi, "eth" on
     // wired, "offline" when disconnected. Accent dot = VPN/tailscale.
-    Row {
+    // Click opens the NetworkPanel dropdown. The Row is a positioner
+    // (sizes itself FROM children), so the MouseArea lives on a
+    // wrapper Item rather than inside it.
+    Item {
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 5
+        implicitWidth: netRow.width
+        implicitHeight: netRow.height
 
-        Rectangle {
-            anchors.verticalCenter: parent.verticalCenter
-            width: 5
-            height: 5
-            radius: 2.5
-            visible: NetworkService.vpnActive
-            color: Theme.accent
+        Row {
+            id: netRow
+            spacing: 5
+
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                width: 5
+                height: 5
+                radius: 2.5
+                visible: NetworkService.vpnActive
+                color: Theme.accent
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: NetworkService.connectionType === "wifi"
+                          ? NetworkService.ssid
+                          : NetworkService.connectionType === "wired"
+                              ? "eth" : "offline"
+                font.family: Theme.monoFont
+                font.pixelSize: 11
+                color: Theme.text3
+            }
         }
 
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: NetworkService.connectionType === "wifi"
-                      ? NetworkService.ssid
-                      : NetworkService.connectionType === "wired"
-                          ? "eth" : "offline"
-            font.family: Theme.monoFont
-            font.pixelSize: 11
-            color: Theme.text3
+        MouseArea {
+            anchors.fill: parent
+            anchors.margins: -4   // clickable halo, same idiom as tray dot
+            onClicked: HookService.networkPanelToggled()
         }
     }
 
