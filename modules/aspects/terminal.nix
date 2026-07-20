@@ -14,7 +14,7 @@
     homeManager = { config, pkgs, ... }:
       let
         themesDir = "${config.xdg.configHome}/garden/themes";
-        gardenThemes = self.packages.${pkgs.system}.garden-themes;
+        gardenThemes = self.packages.${pkgs.stdenv.hostPlatform.system}.garden-themes;
       in
       {
         # Seed ~/.config/garden/themes/ on first activation so a fresh

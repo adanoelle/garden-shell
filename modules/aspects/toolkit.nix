@@ -10,7 +10,7 @@
 
     homeManager = { pkgs, ... }: {
       home.packages = [
-        self.packages.${pkgs.system}.garden-themes
+        self.packages.${pkgs.stdenv.hostPlatform.system}.garden-themes
       ];
     };
   };
