@@ -51,6 +51,7 @@ ShellRoot {
 
     // Anchored panels (click-outside dismiss, pointer-only).
     TrayPanel {}
+    NetworkPanel {}
 
     // Session lock (WlSessionLock — inert until HookService.lockRequested).
     LockScreen {}

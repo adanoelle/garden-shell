@@ -29,6 +29,7 @@ Singleton {
     signal powerMenuToggled()
     signal brightnessOsdRequested(real value)
     signal trayToggled()
+    signal networkPanelToggled()
 
     // ── IPC handler ─────────────────────────────────────────────────
 
@@ -107,6 +108,11 @@ Singleton {
         function toggleTray(): string {
             root.trayToggled();
             return "toggled tray panel";
+        }
+
+        function toggleNetworkPanel(): string {
+            root.networkPanelToggled();
+            return "toggled network panel";
         }
 
         /// Show the brightness OSD immediately at an absolute percent
