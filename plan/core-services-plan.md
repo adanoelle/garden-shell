@@ -288,7 +288,8 @@ IPC `togglePowerMenu`, keybind Super+Escape.
 >   `eth` / `offline` in text-3, VPN as accent dot. Tailscale check
 >   rides the same trigger via a sh guard that prints `{}` when the
 >   binary is missing (not installed on this box — path dormant).
->   NetworkPanel deferred as planned; bar indicator is the deliverable.
+>   NetworkPanel deferred as planned (since landed 2026-07-20 — see
+>   E2); bar indicator was the Phase E deliverable.
 > - Tray menus are rendered as themed text rows via `QsMenuOpener`
 >   drill-down (`‹ back`, `›` submenus, `[x]`/`(·)` check prefixes,
 >   320 px elide) — NOT `SystemTrayItem.display()`: platform menus need
@@ -321,6 +322,39 @@ added for the ORNL laptop:
   state as an `accent` dot — glanceable "am I on the VPN" matters at work.
 - `panels/NetworkPanel.qml` floating card from bar click, text + signal
   bars, no switch widgets (spec §10).
+
+> **Landed (panel, 2026-07-20):** `panels/NetworkPanel.qml` on the
+> TrayPanel anchored-panel shape; bar `eth`/SSID label is clickable
+> (halo idiom); new IPC `toggleNetworkPanel`. No fern changes — click/
+> IPC-driven like the tray.
+>
+> **Decisions / deviations:**
+> - **Saved connections only.** The panel is pointer-only (no keyboard
+>   grab), so there is no password entry. Unknown secured wifi networks
+>   are listed but not clickable; known = SSID ∈ saved wireless profile
+>   names (NM's profile-name==SSID convention, approximation noted in
+>   code).
+> - Activation always via `nmcli connection up id` — never
+>   `device wifi connect`, which can duplicate profiles.
+> - Confirm-down (PowerMenu second-click idiom) only when dropping the
+>   **last active link**. `connection up` is a local D-Bus call, so the
+>   panel restores a link even while offline — confirm guards
+>   accidents, not lockout. VPN rows toggle without confirm (never
+>   connectivity-fatal).
+> - Errors are text-first in the row's status slot: first stderr line,
+>   `Error:` prefix stripped, ~60 chars, 6 s auto-clear. No toasts.
+> - Wifi scan only on panel open (`--rescan auto`) + explicit `rescan`
+>   row (`--rescan yes`) — monitor events never rescan (radio churn).
+>   Terse parsing needs real unescaping (`\:`/`\\`) since NAME/SSID
+>   lead the field list: `_splitTerse` in NetworkService.
+> - Tailscale is a read-only `tailscale · up` line — `tailscale up` may
+>   need a browser auth flow a pointer-only panel can't host, and a
+>   one-way toggle is a confusing affordance.
+> - Surprise: this desktop has a wifi radio (`wlp6s0`), so section
+>   visibility, scan parsing, signal bars, and secured/unknown
+>   rendering verified here. Still owed to the laptop pass:
+>   known-network activate + rescan latency (no saved wifi profiles on
+>   this box).
 
 **E3. System tray.**
 
@@ -356,15 +390,10 @@ added for the ORNL laptop:
   cache-and-degrade or a tailscale-only answer before it's worth building.
 - Focus-session integration (Super Productivity IPC) — rides on the
   Phase B suppression switch once the planner is in daily use.
-- Tooltips, network/bluetooth deep panels, MediaControls scratchpad.
-- **Network panel** (2026-07-18): make the bar's `eth`/SSID label
-  clickable → anchored `panels/NetworkPanel.qml` following the TrayPanel
-  pattern (click-outside catcher, bar-corner card). List connections
-  from `nmcli` via NetworkService, connect/disconnect + wifi scan
-  actions. The old Hyprland-era fern-shell had a network menu; it never
-  made the jump to garden — Phase E's indicator is deliberately
-  text-only. Touches `BarSystemState.qml`, new `NetworkPanel.qml`,
-  `HookService.qml` (signal + IPC), `shell.qml`.
+- Tooltips, bluetooth deep panel, MediaControls scratchpad.
+- ~~Network panel~~ (deferred 2026-07-18, **landed 2026-07-20** — see
+  E2 landed note for scope decisions). Remaining laptop-day items:
+  known-network activate, rescan latency, real-VPN toggle.
 
 ## Suggested order & effort
 
