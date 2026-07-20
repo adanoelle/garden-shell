@@ -17,6 +17,10 @@
     };
 
     homeManager = { config, lib, pkgs, ... }: {
+      # Screenshot flow runtime deps (IPC `screenshot <mode>`):
+      # grim/slurp capture, satty edit action, wl-clipboard copy.
+      home.packages = with pkgs; [ grim slurp satty wl-clipboard ];
+
       # Deploy QML shell files to ~/.config/quickshell/garden/
       xdg.configFile."quickshell/garden" = {
         source = ../../_qml;

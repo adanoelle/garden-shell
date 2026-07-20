@@ -135,6 +135,12 @@ Singleton {
             return "brightness osd " + Math.round(frac * 100) + "%";
         }
 
+        /// Capture a screenshot: mode = region | window | output.
+        /// No signal — nothing listens; the service owns the flow.
+        function screenshot(mode: string): string {
+            return ScreenshotService.capture(mode);
+        }
+
         function focusEnd(): string {
             NotificationService.setFocus(false);
             root.focusSessionChanged(false);

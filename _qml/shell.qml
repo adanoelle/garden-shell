@@ -28,6 +28,7 @@ ShellRoot {
     property var _battery: BatteryService
     property var _network: NetworkService
     property var _notifications: NotificationService
+    property var _screenshot: ScreenshotService
 
     Variants {
         model: Quickshell.screens

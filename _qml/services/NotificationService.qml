@@ -157,9 +157,10 @@ Singleton {
 
     /// Local, shell-generated pseudo-notification. Matches the API
     /// surface NotificationCard touches (appName/summary/body/urgency/
-    /// actions/expireTimeout + expire()/dismiss()). Bypasses the D-Bus
-    /// server and history; cleanup is solely via the closures below.
-    function _makeSynthetic(summary, body, actions) {
+    /// actions/expireTimeout/image + expire()/dismiss()). Bypasses the
+    /// D-Bus server and history; cleanup is solely via the closures
+    /// below.
+    function _makeSynthetic(summary, body, actions, image) {
         const n = {
             synthetic: true,
             appName: "garden",
@@ -167,7 +168,8 @@ Singleton {
             body: body,
             urgency: NotificationUrgency.Normal,
             actions: actions || [],
-            expireTimeout: -1
+            expireTimeout: -1,
+            image: image || ""
         };
         n.expire = () => root._remove(n);
         n.dismiss = () => root._remove(n);
@@ -193,6 +195,14 @@ Singleton {
         const n = root._makeSynthetic(summary, body, []);
         if (urgency !== undefined) n.urgency = urgency;
         root.popups = root.popups.concat([n]);
+    }
+
+    /// Shell-originated popup with actions and an optional image
+    /// (screenshot cards). Action order is meaningful: the card's
+    /// click-anywhere handler invokes actions[0].
+    function sendRich(summary, body, actions, image) {
+        root.popups = root.popups.concat(
+            [root._makeSynthetic(summary, body, actions, image)]);
     }
 
     // ── Server ──────────────────────────────────────────────────────

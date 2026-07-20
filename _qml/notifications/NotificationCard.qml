@@ -181,6 +181,24 @@ Rectangle {
             textFormat: Text.PlainText
         }
 
+        // Image (screenshot thumbnails; real D-Bus image hints too).
+        // Fixed height — no post-decode reflow/jitter.
+        Item {
+            readonly property string src: root.notification.image ?? ""
+            width: parent.width
+            height: 140
+            visible: src !== ""
+
+            Image {
+                anchors.fill: parent
+                source: parent.src
+                fillMode: Image.PreserveAspectFit   // letterbox, never crop
+                asynchronous: true
+                cache: false               // satty edit overwrites the file
+                sourceSize.width: 488      // 2x decode cap
+            }
+        }
+
         // Actions: invoke + dismiss.
         Row {
             visible: root.notification.actions.length > 0

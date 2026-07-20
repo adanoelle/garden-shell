@@ -102,8 +102,11 @@ binds {
     Mod+Shift+Q { close-window; }
     Mod+Shift+Slash { show-hotkey-overlay; }
     Mod+Shift+E { quit; }
-    Print { screenshot; }
-    Mod+Print { screenshot-window; }
+    // Screenshot — garden flow (save + copy + notification card).
+    // Mod+S family: keyboard has no Print key.
+    Mod+S { spawn "sh" "-c" "qs -c garden ipc call garden screenshot region"; }
+    Mod+Shift+S { spawn "sh" "-c" "qs -c garden ipc call garden screenshot window"; }
+    Mod+Ctrl+S { spawn "sh" "-c" "qs -c garden ipc call garden screenshot output"; }
 }
 workspace "studio"
 workspace "research"
