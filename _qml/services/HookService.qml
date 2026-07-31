@@ -30,6 +30,7 @@ Singleton {
     signal brightnessOsdRequested(real value)
     signal trayToggled()
     signal networkPanelToggled()
+    signal bluetoothPanelToggled()
 
     // ── IPC handler ─────────────────────────────────────────────────
 
@@ -113,6 +114,11 @@ Singleton {
         function toggleNetworkPanel(): string {
             root.networkPanelToggled();
             return "toggled network panel";
+        }
+
+        function toggleBluetoothPanel(): string {
+            root.bluetoothPanelToggled();
+            return "toggled bluetooth panel";
         }
 
         /// Show the brightness OSD immediately at an absolute percent

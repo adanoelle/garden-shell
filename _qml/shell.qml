@@ -27,6 +27,7 @@ ShellRoot {
     property var _brightness: BrightnessService
     property var _battery: BatteryService
     property var _network: NetworkService
+    property var _bluetooth: BluetoothService
     property var _notifications: NotificationService
     property var _screenshot: ScreenshotService
 
@@ -53,6 +54,7 @@ ShellRoot {
     // Anchored panels (click-outside dismiss, pointer-only).
     TrayPanel {}
     NetworkPanel {}
+    BluetoothPanel {}
 
     // Session lock (WlSessionLock — inert until HookService.lockRequested).
     LockScreen {}
