@@ -94,6 +94,32 @@ Row {
         }
     }
 
+    // Bluetooth — hidden when powered off, shows "bt" when powered
+    // but nothing connected, shows device name when connected.
+    // Click opens the BluetoothPanel dropdown.
+    Item {
+        anchors.verticalCenter: parent.verticalCenter
+        visible: BluetoothService.powered
+        implicitWidth: btText.implicitWidth
+        implicitHeight: btText.implicitHeight
+
+        Text {
+            id: btText
+            text: BluetoothService.anyConnected
+                      ? BluetoothService.connectedDevices[0].name
+                      : "bt"
+            font.family: Theme.monoFont
+            font.pixelSize: 11
+            color: BluetoothService.anyConnected ? Theme.text3 : Theme.text4
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            anchors.margins: -4
+            onClicked: HookService.bluetoothPanelToggled()
+        }
+    }
+
     // Battery (Phase E) — persistent text-3 percentage, unlike the
     // ambient v/b slots: charge is glanceable state, not an event.
     // Urgent below 15% while discharging; `+` suffix on AC. Hidden
