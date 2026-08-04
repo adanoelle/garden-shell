@@ -196,7 +196,7 @@ OverlayBase {
                         width: parent.width
                         height: settings._activeTab === "palette"
                             ? paletteEditor.height + 24
-                            : keybindsPlaceholder.height + 24
+                            : keybindsView.height + 24
 
                         // Palette editor (always loaded, visibility toggled).
                         PaletteEditor {
@@ -209,9 +209,9 @@ OverlayBase {
                             popupParent: panelRect
                         }
 
-                        // Keybinds placeholder.
-                        KeybindsPlaceholder {
-                            id: keybindsPlaceholder
+                        // Keybinds reference.
+                        KeybindsView {
+                            id: keybindsView
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.top: parent.top
