@@ -99,7 +99,7 @@ Row {
     // Click opens the BluetoothPanel dropdown.
     Item {
         anchors.verticalCenter: parent.verticalCenter
-        visible: BluetoothService.powered
+        visible: true
         implicitWidth: btText.implicitWidth
         implicitHeight: btText.implicitHeight
 
