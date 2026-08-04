@@ -90,6 +90,7 @@ binds {
     Mod+Equal { set-column-width "+10%"; }
     Mod+Minus { set-column-width "-10%"; }
     Mod+F { maximize-column; }
+    Mod+Shift+F { fullscreen-window; }
     Mod+R { switch-preset-column-width; }
     Mod+V { toggle-window-floating; }
 
@@ -136,6 +137,14 @@ window-rule {
 window-rule {
     match app-id="^lazygit$"
     open-floating true
+}
+window-rule {
+    match app-id="^libreoffice"
+    default-column-width { proportion 1.0; }
+}
+window-rule {
+    match app-id="^teams-for-linux$"
+    default-column-width { proportion 1.0; }
 }
 window-rule {
     match title="frontier"
