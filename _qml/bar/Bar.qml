@@ -13,8 +13,12 @@ import "../services"
 PanelWindow {
     id: bar
 
-    /// The screen this bar instance is assigned to.
-    required property var screen
+    // The screen comes from PanelWindow's built-in `screen`, set by the
+    // Variants delegate in shell.qml (`screen: modelData`). Do NOT
+    // redeclare it here: a `property var screen` shadows the window's
+    // own property, the bar is never bound to an output, and niri
+    // places every bar on the focused screen (no bar on a docked
+    // monitor).
 
     anchors {
         top: ConfigService.barPosition === "top"
