@@ -1,9 +1,10 @@
 # Built-in palettes
 
-> Garden ships with four palettes named after Japanese craft materials — each
-> covering a different temperature and lightness niche.
+> Garden's built-in palettes are named after Japanese craft materials, each
+> covering a different temperature and lightness niche. The full set lives in
+> `_config/palettes.toml`; this page covers the ones below in detail.
 
-## The four palettes
+## The palettes
 
 | Icon | Name | Character | When to use |
 |------|------|-----------|-------------|
@@ -11,6 +12,7 @@
 | ● | **sumi** | Neutral — charcoal ink × amber | When you want no color bias in the background. Pure neutral grays with amber warmth in text. |
 | ○ | **kinu** | Light — raw silk × dark walnut | Daytime or bright environments. Light parchment background with dark walnut text. |
 | ◑ | **yoru** | Night — no blue light × deep amber | Late night. Eliminates blue light entirely. Deep amber tones throughout. |
+| ◔ | **shitanuri** | Dark — raw umber × terre verte | Under a painted wallpaper. Low-chroma earths that read as the underpainting beneath the picture, so the painting stays the only vivid thing on screen. |
 
 Switch palettes instantly:
 
@@ -67,6 +69,17 @@ text-2       #a08a6e    text-1       #d4b888
 accent       #c4a050    urgent       #c07848    ok  #7a9060
 ```
 
+### shitanuri ◔
+
+```
+base-deep    #1f1a13    base         #262017
+base-raised  #2e271d    base-hl      #383024
+border-sub   #363024    border       #4b4433
+text-4       #625b46    text-3       #827e65
+text-2       #a9a284    text-1       #d8cfb0
+accent       #c6a46c    urgent       #bb6f4c    ok  #84957a
+```
+
 ## Design rationale
 
 ### Japanese craft naming
@@ -82,6 +95,14 @@ The names reference materials and techniques from Japanese craftsmanship:
   palette uses this as its canvas with dark walnut for text.
 - **yoru** (夜) — night. The warmest palette, designed for use after dark when
   blue light should be avoided entirely.
+- **shitanuri** (下塗り) — undercoat, the first layer of paint. Mixed as the
+  underpainting beneath John Singer Sargent's *Nonchaloir (Repose)* (1911,
+  National Gallery of Art): colours sampled from the painting and pulled back
+  to underpainting strength. Raw umber grounds after his warm lay-in, olive
+  half-tones from the sofa, lead-white text from the shawl, gilt accent from
+  the frame, burnt sienna for urgent, and terre verte (the green earth
+  painters laid beneath flesh) for ok. Text contrast on `base`: text-1
+  10.4:1, text-2 6.3:1, text-3 3.9:1.
 
 ### Why these four?
 
