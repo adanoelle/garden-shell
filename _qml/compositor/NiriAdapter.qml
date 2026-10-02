@@ -124,6 +124,7 @@ Singleton {
                 ws[name] = {
                     id: w.id,
                     name: name,
+                    idx: w.idx || 0,
                     active: w.is_active || false,
                     output: w.output || "",
                     windows: []
@@ -267,7 +268,13 @@ Singleton {
         const ws = root._workspaces;
         const wins = root._windows;
 
-        for (const name in ws) {
+        // Follow niri's own order (output, then index on that output):
+        // object keys keep insertion order, and niri reports workspaces
+        // in creation order, which drifts as outputs come and go.
+        const names = Object.keys(ws).sort((a, b) =>
+            ws[a].output.localeCompare(ws[b].output) || ws[a].idx - ws[b].idx);
+
+        for (const name of names) {
             let columnCount = 0;
             for (const id in wins) {
                 if (wins[id].workspaceId === ws[name].id) {
