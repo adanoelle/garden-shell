@@ -64,13 +64,24 @@ Item {
     // ── Sync from Theme (single FileView lives in Theme, not here) ──
 
     /// Sync when Theme loads or reloads palettes.json.
+    ///
+    /// The editor lives (hidden) for the whole session and live-previews
+    /// its selection by pushing colours into Theme. When the active
+    /// palette changes underneath it (`garden-themes apply` from a
+    /// terminal, the launcher, IPC), it must follow; otherwise it pushes
+    /// the previously selected palette's colours straight back over the
+    /// one just applied, and the bar stays on the old palette while
+    /// Theme.activePalette (and kitty, fish, niri) have moved on.
     Connections {
         target: Theme
         function onAllPaletteDataChanged() {
+            const previousActive = root._palettesData.active;
             root._palettesData = Theme.allPaletteData;
-            // Select the active palette if we don't have one yet.
-            if (!root._editingPalette || !root._palettesData.palettes?.[root._editingPalette]) {
-                root._editingPalette = root._palettesData.active || Theme.activePalette;
+            const active = root._palettesData.active || Theme.activePalette;
+            if (!root._editingPalette
+                || !root._palettesData.palettes?.[root._editingPalette]
+                || active !== previousActive) {
+                root._editingPalette = active;
             }
             root._loadWorkingColors();
         }
