@@ -84,6 +84,27 @@ accent = "#c9b88c"
 urgent = "#c4796b"
 ok = "#7c9a7c"
 
+[palettes.shitanuri]
+name = "shitanuri"
+subtitle = "dark -- raw umber x terre verte"
+icon = "◔"
+builtin = true
+
+[palettes.shitanuri.colors]
+base-deep = "#1f1a13"
+base = "#262017"
+base-raised = "#2e271d"
+base-hl = "#383024"
+border-sub = "#363024"
+border = "#4b4433"
+text-4 = "#625b46"
+text-3 = "#827e65"
+text-2 = "#a9a284"
+text-1 = "#d8cfb0"
+accent = "#c6a46c"
+urgent = "#bb6f4c"
+ok = "#84957a"
+
 [palettes.sugi]
 name = "sugi"
 subtitle = "dark -- studio green x warm sand"
