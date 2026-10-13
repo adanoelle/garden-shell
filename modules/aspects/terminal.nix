@@ -33,8 +33,13 @@
         # Kitty: include garden theme from mutable themes dir so SIGUSR1
         # config reload picks up palette changes across all instances.
         # Relative path from ~/.config/kitty/ to ~/.config/garden/themes/.
+        # The garden mono face (Settings → palette → typography) is written
+        # by the shell to ~/.config/garden/fonts/kitty.conf; globinclude
+        # tolerates the file not existing yet (shell never started), and as
+        # the last font_family it overrides the consumer's default.
         programs.kitty.extraConfig = ''
           include ../garden/themes/kitty/garden-theme.conf
+          globinclude ../garden/fonts/kitty.conf
         '';
 
         # Fish: source garden themes and symlink tool-specific theme files

@@ -423,6 +423,15 @@ Item {
                 current: Theme.monoFont
                 sample: "~/src/fern main ✧ just check   0O 1lI {}[] => !="
             }
+
+            Text {
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: "mono also sets kitty, Ghostty and presenterm (new windows)"
+                color: Theme.text3
+                font.family: Theme.sansFont
+                font.pixelSize: 11
+            }
         }
 
         // ── Action buttons ──────────────────────────────────────────
