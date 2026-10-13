@@ -85,6 +85,15 @@ The QML shell is served to Quickshell via a symlink:
 Quickshell reads directly from the source tree. It is started by niri
 (`spawn-at-startup "quickshell" "-c" "garden"`) and runs as a daemon.
 
+On machines where Home Manager deploys `~/.config/quickshell/garden` as a
+store copy (the `garden.shell` aspect), source edits do not hot-reload.
+`just qs-dev` runs an instance from `_qml/` in the foreground and restores
+the deployed shell on Ctrl-C. **While it runs, niri keybinds and the
+before-sleep lock are dead**: they call `qs -c garden ipc …`, which
+resolves to the deployed config path, and the dev instance is keyed by
+its source path. Drive it with `qs ipc -p _qml call garden …`; keep
+sessions short.
+
 ### Three tiers of change
 
 | What changed | How it takes effect |
