@@ -73,6 +73,10 @@ qs-ipc method *args:
 qs-ipc-show:
     qs ipc -c garden show
 
+# Probe native Bluetooth/Networking state (read-only, no scans)
+qs-probe-netbt:
+    qs -p _qml/dev/netbt-probe.qml
+
 # Probe Quickshell service module availability (core-services plan, phase 0)
 qs-probe:
     qs --version

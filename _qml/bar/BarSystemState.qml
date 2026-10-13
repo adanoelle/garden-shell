@@ -10,7 +10,8 @@ import "../services"
 ///
 ///   v{n} b{n} — ambient: rest at text-4, brighten on change (1.5 s).
 ///               Volume: click mutes, scroll steps 5%.
-///   network   — SSID / "eth" / "offline", accent dot = VPN/tailscale.
+///   network   — SSID / "eth" / "offline", accent dot = VPN/tailscale,
+///               urgent on a captive portal / limited connectivity.
 ///   bt        — "bt", or the connected device's name.
 ///   battery   — persistent: charge is glanceable state, not an event.
 ///   media     — channels with the `mpris-ambient` mode only.
@@ -123,10 +124,15 @@ Row {
         text: NetworkService.connectionType === "wifi" ? NetworkService.ssid
             : NetworkService.connectionType === "wired" ? "eth" : "offline"
         maxTextWidth: 140
+        // Captive portal / limited connectivity reads as urgent.
+        color: NetworkService.connectivityIssue !== "" ? Theme.urgent : Theme.text3
         interactive: true
         tip: root.tip
         tooltip: (NetworkService.connectionType === "wifi" ? "wifi \u2022 " + NetworkService.ssid
                   : NetworkService.connectionType === "wired" ? "wired" : "offline")
+            + (NetworkService.connectivityIssue !== ""
+                ? " \u2022 " + (NetworkService.connectivityIssue === "portal"
+                    ? "captive portal" : NetworkService.connectivityIssue) : "")
             + (NetworkService.vpnActive ? " \u2022 vpn" : "")
         onClicked: HookService.networkPanelToggled(root.screen)
 
@@ -150,7 +156,9 @@ Row {
         tip: root.tip
         tooltip: !BluetoothService.powered ? "bluetooth off"
             : BluetoothService.anyConnected
-                ? "bluetooth \u2022 " + BluetoothService.connectedDevices.map(d => d.name).join(", ")
+                ? "bluetooth \u2022 " + BluetoothService.connectedDevices
+                    .map(d => d.name + (d.batteryAvailable ? " " + Math.round(d.battery * 100) + "%" : ""))
+                    .join(", ")
                 : "bluetooth \u2022 no devices"
         onClicked: HookService.bluetoothPanelToggled(root.screen)
     }
