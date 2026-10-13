@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Networking
 import Quickshell.Wayland
 import ".."
 import "../services"
@@ -8,15 +9,16 @@ import "../services"
 ///
 /// Anchored-panel pattern (see TrayPanel): transparent full-surface
 /// PanelWindow catches outside clicks; the card anchors under the
-/// bar's right edge. Pointer-only — no keyboard grab, which is why
-/// scope is saved connections only: activating a known profile needs
-/// no password entry. Unknown secured wifi networks are listed but
-/// not clickable.
+/// bar's right edge. Pointer-only — no keyboard grab, so no password
+/// entry: known networks and open networks connect on click; unknown
+/// secured networks are listed but not clickable.
 ///
-/// Confirm idiom (PowerMenu second-click pattern) guards deactivating
-/// the last active link. Note `nmcli connection up` is a local D-Bus
-/// call to NetworkManager, so the panel can restore the link even
-/// while the network is down — confirm guards accidents, not lockout.
+/// Rows bind to NetworkService's live native objects (wired devices,
+/// wifi networks); VPN rows are nmcli profiles.
+///
+/// Confirm idiom (PowerMenu second-click pattern) guards taking down
+/// the last active link. Bringing a link back up is a local D-Bus call
+/// to NetworkManager, so confirm guards accidents, not lockout.
 PanelWindow {
     id: panel
 
@@ -34,107 +36,168 @@ PanelWindow {
     WlrLayershell.namespace: "garden-network"
     WlrLayershell.layer: WlrLayer.Overlay
 
-    /// Fixed content width so SSIDs elide and the card doesn't jitter
+    /// Fixed content width so names elide and the card doesn't jitter
     /// as scan results change; height stays content-driven.
     readonly property int contentWidth: 260
 
-    /// Connection name awaiting a second click to confirm `down`.
-    property string _confirmName: ""
+    /// Row key ("wifi:<name>" / "wired:<device>") awaiting a second
+    /// click to confirm taking the link down.
+    property string _confirmKey: ""
 
     onVisibleChanged: {
         NetworkService.setPanelOpen(visible);
-        if (!visible) panel._confirmName = "";
+        if (!visible) panel._confirmKey = "";
     }
 
     Connections {
         target: HookService
-        function onNetworkPanelToggled() { panel.visible = !panel.visible; }
+        function onNetworkPanelToggled(screen) { panel._toggle(screen); }
+        function onTrayToggled() { panel.visible = false; }  // one panel at a time
+        function onBluetoothPanelToggled() { panel.visible = false; }  // one panel at a time
+    }
+
+    /// Open on the clicked bar's screen (null = compositor's choice).
+    function _toggle(screen) {
+        if (!panel.visible) panel.screen = screen;
+        panel.visible = !panel.visible;
     }
 
     // ── Behavior helpers ─────────────────────────────────────────────
 
-    function _linkActiveCount() {
-        return NetworkService.savedConnections.filter(c =>
-            c.active && (c.type === "802-3-ethernet"
-                         || c.type === "802-11-wireless")).length;
+    function _linkCount(): int {
+        return (NetworkService.connectionType === "wifi" ? 1 : 0)
+            + NetworkService.wiredDevices.filter(d => d.connected).length;
     }
 
-    /// Up/down toggle for wired/wifi rows. Deactivating the last
-    /// active link requires a confirming second click.
-    function _toggleLink(name, active) {
-        if (!active) {
-            panel._confirmName = "";
-            NetworkService.activate(name);
+    /// Run `down` unless it would drop the last link — then ask first.
+    function _guardedDown(key: string, down) {
+        if (panel._linkCount() <= 1 && panel._confirmKey !== key) {
+            panel._confirmKey = key;
             return;
         }
-        if (panel._linkActiveCount() <= 1 && panel._confirmName !== name) {
-            panel._confirmName = name;
-            return;
-        }
-        panel._confirmName = "";
-        NetworkService.deactivate(name);
+        panel._confirmKey = "";
+        down();
     }
 
-    function _bars(sig) {
-        if (sig >= 75) return "\u2582\u2584\u2586\u2588";
-        if (sig >= 50) return "\u2582\u2584\u2586";
-        if (sig >= 25) return "\u2582\u2584";
+    function _bars(strength: real): string {
+        const pct = strength * 100;
+        if (pct >= 75) return "\u2582\u2584\u2586\u2588";
+        if (pct >= 50) return "\u2582\u2584\u2586";
+        if (pct >= 25) return "\u2582\u2584";
         return "\u2582";
+    }
+
+    function _busy(state): bool {
+        return state === ConnectionState.Connecting || state === ConnectionState.Disconnecting;
     }
 
     // ── Shared row ───────────────────────────────────────────────────
 
-    /// Name + status-slot row for saved connections and VPNs. Error
-    /// feedback lives in the status slot — text-first, no toasts.
+    /// Optional leading glyphs (signal bars), name, and a status slot.
+    /// Error feedback lives in the status slot — text-first, no toasts.
     component NetRow: Item {
         id: row
 
         required property string name
+        property string key: ""
+        property string leading: ""
         property bool active: false
+        property bool busy: false
         property bool clickable: true
-        signal toggled()
+        property color nameColor: row.active ? Theme.text1 : Theme.text3
+        property string idleStatus: row.active ? "up" : "\u2014"
+        signal clicked()
 
-        readonly property bool busy: NetworkService.busyName === row.name
-        readonly property bool showError:
-            NetworkService.errorName === row.name
-        readonly property bool confirming: panel._confirmName === row.name
+        readonly property bool showError: NetworkService.errorName === row.name
+        readonly property bool confirming: row.key !== "" && panel._confirmKey === row.key
 
         width: panel.contentWidth
         height: nameText.implicitHeight
 
         Text {
-            id: nameText
+            id: leadingText
             anchors.left: parent.left
+            width: row.leading ? 34 : 0
+            text: row.leading
+            font.family: Theme.monoFont
+            font.pixelSize: Theme.fontMeta
+            color: Theme.text3
+        }
+
+        Text {
+            id: nameText
+            anchors.left: leadingText.right
             anchors.right: statusText.left
-            anchors.rightMargin: 8
+            anchors.rightMargin: Theme.space2
             text: row.name
             elide: Text.ElideRight
-            font.family: Theme.monoFont
-            font.pixelSize: 12
-            color: row.active ? Theme.text1 : Theme.text3
+            font.family: Theme.sansFont
+            font.pixelSize: Theme.fontBody
+            color: row.nameColor
         }
 
         Text {
             id: statusText
             anchors.right: parent.right
-            width: Math.min(implicitWidth, row.width - 40)
+            anchors.verticalCenter: nameText.verticalCenter
+            width: Math.min(implicitWidth, row.width - 60)
             horizontalAlignment: Text.AlignRight
             elide: Text.ElideRight
             text: row.busy ? "\u2026"
-                  : row.showError ? NetworkService.errorText
-                  : row.confirming ? "confirm down?"
-                  : row.active ? "up" : "\u2014"
+                : row.showError ? NetworkService.errorText
+                : row.confirming ? "confirm down?"
+                : row.idleStatus
             font.family: Theme.monoFont
-            font.pixelSize: 11
+            font.pixelSize: Theme.fontMeta
             color: row.busy ? Theme.text2
-                   : (row.showError || row.confirming) ? Theme.urgent
-                   : row.active ? Theme.ok : Theme.text4
+                : (row.showError || row.confirming) ? Theme.urgent
+                : row.active ? Theme.ok : Theme.text4
         }
 
         MouseArea {
             anchors.fill: parent
             enabled: row.clickable && !row.busy
-            onClicked: row.toggled()
+            cursorShape: Qt.PointingHandCursor
+            onClicked: row.clicked()
+        }
+    }
+
+    /// Small section label, with an optional action on the right.
+    component SectionLabel: Item {
+        id: section
+
+        required property string label
+        property string action: ""
+        signal actionClicked()
+
+        width: panel.contentWidth
+        height: labelText.implicitHeight
+
+        Text {
+            id: labelText
+            text: section.label
+            font.family: Theme.monoFont
+            font.pixelSize: Theme.fontCaption
+            color: Theme.text4
+        }
+
+        Text {
+            anchors.right: parent.right
+            anchors.baseline: labelText.baseline
+            visible: section.action !== ""
+            text: section.action
+            font.family: Theme.sansFont
+            font.pixelSize: Theme.fontMeta
+            color: actionArea.containsMouse ? Theme.text1 : Theme.text3
+
+            MouseArea {
+                id: actionArea
+                anchors.fill: parent
+                anchors.margins: -4
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: section.actionClicked()
+            }
         }
     }
 
@@ -153,12 +216,12 @@ PanelWindow {
         anchors.bottom: ConfigService.barPosition === "bottom"
                             ? parent.bottom : undefined
         anchors.right: parent.right
-        anchors.topMargin: ModeService.currentHeight + 4
-        anchors.bottomMargin: ModeService.currentHeight + 4
-        anchors.rightMargin: 12
+        anchors.topMargin: ModeService.panelOffset
+        anchors.bottomMargin: ModeService.panelOffset
+        anchors.rightMargin: Theme.space3
 
-        width: panel.contentWidth + 32
-        height: content.implicitHeight + 24
+        width: panel.contentWidth + Theme.space4 * 2
+        height: content.implicitHeight + Theme.space3 * 2
         color: Theme.base
         border.color: Theme.border
         border.width: 1
@@ -167,7 +230,7 @@ PanelWindow {
         // a stray card click also resets a pending confirm.
         MouseArea {
             anchors.fill: parent
-            onClicked: panel._confirmName = ""
+            onClicked: panel._confirmKey = ""
         }
 
         Column {
@@ -181,46 +244,60 @@ PanelWindow {
 
                 Text {
                     text: NetworkService.connectionType === "wifi"
-                              ? NetworkService.ssid + " \u00b7 wifi"
+                              ? NetworkService.ssid + " \u2022 wifi"
                               : NetworkService.connectionType === "wired"
-                                  ? "eth" : "offline"
-                    font.family: Theme.monoFont
-                    font.pixelSize: 12
+                                  ? "wired" : "offline"
+                    font.family: Theme.sansFont
+                    font.pixelSize: Theme.fontBody
                     color: Theme.text1
+                }
+
+                Text {
+                    visible: NetworkService.connectivityIssue !== ""
+                    text: NetworkService.connectivityIssue === "portal"
+                        ? "captive portal \u00b7 sign in to continue"
+                        : NetworkService.connectivityIssue
+                    font.family: Theme.monoFont
+                    font.pixelSize: Theme.fontMeta
+                    color: Theme.urgent
                 }
 
                 Text {
                     visible: NetworkService.vpnActive
                     text: "vpn active"
                     font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.pixelSize: Theme.fontMeta
                     color: Theme.accent
                 }
             }
 
-            // ── Saved connections (wired + wifi profiles) ────────
+            // ── Wired ────────────────────────────────────────────
             Column {
                 spacing: 6
+                visible: NetworkService.wiredDevices.length > 0
 
-                Text {
-                    text: "connections"
-                    font.family: Theme.monoFont
-                    font.pixelSize: 10
-                    color: Theme.text4
-                }
+                SectionLabel { label: "wired" }
 
                 Repeater {
-                    model: NetworkService.savedConnections.filter(c =>
-                        c.type === "802-3-ethernet"
-                        || c.type === "802-11-wireless")
+                    model: NetworkService.wiredDevices
 
                     delegate: NetRow {
-                        id: connRow
                         required property var modelData
-                        name: connRow.modelData.name
-                        active: connRow.modelData.active
-                        onToggled: panel._toggleLink(connRow.name,
-                                                     connRow.active)
+                        name: modelData.network?.name || modelData.name
+                        key: "wired:" + modelData.name
+                        active: modelData.connected
+                        busy: panel._busy(modelData.state)
+                        clickable: modelData.connected || (modelData.hasLink && modelData.network !== null)
+                        idleStatus: !modelData.hasLink ? "no link"
+                            : modelData.connected ? "up" : "\u2014"
+                        onClicked: {
+                            if (modelData.connected)
+                                panel._guardedDown(key, () => NetworkService.toggleWired(modelData));
+                            else {
+                                panel._confirmKey = "";
+                                NetworkService.toggleWired(modelData);
+                            }
+                        }
                     }
                 }
             }
@@ -228,171 +305,85 @@ PanelWindow {
             // ── Wifi (hidden on wifi-less machines) ──────────────
             Column {
                 spacing: 6
-                visible: NetworkService.wifiDevice !== ""
+                visible: NetworkService.wifiDevice !== null
 
-                Text {
-                    text: "wifi"
-                    font.family: Theme.monoFont
-                    font.pixelSize: 10
-                    color: Theme.text4
+                SectionLabel {
+                    label: "wifi"
+                    action: NetworkService.wifiEnabled ? "turn off" : "turn on"
+                    onActionClicked: NetworkService.setWifiEnabled(!NetworkService.wifiEnabled)
                 }
 
                 Repeater {
-                    model: NetworkService.wifiNetworks.slice(0, 8)
+                    model: NetworkService.wifiEnabled
+                        ? NetworkService.wifiNetworks.slice(0, 8) : []
 
-                    delegate: Item {
-                        id: wifiRow
-
+                    delegate: NetRow {
                         required property var modelData
 
-                        readonly property bool busy:
-                            NetworkService.busyName === wifiRow.modelData.ssid
-                        readonly property bool confirming:
-                            panel._confirmName === wifiRow.modelData.ssid
-                        readonly property bool clickable:
-                            wifiRow.modelData.inUse || wifiRow.modelData.known
+                        readonly property bool _open: modelData.security === WifiSecurityType.Open
 
-                        width: panel.contentWidth
-                        height: ssidText.implicitHeight
-
-                        Text {
-                            id: barsText
-                            anchors.left: parent.left
-                            width: 34
-                            text: panel._bars(wifiRow.modelData.signal)
-                            font.family: Theme.monoFont
-                            font.pixelSize: 11
-                            color: Theme.text3
-                        }
-
-                        Text {
-                            id: ssidText
-                            anchors.left: barsText.right
-                            anchors.right: wifiStatus.left
-                            anchors.rightMargin: 8
-                            text: wifiRow.modelData.ssid
-                                  + (wifiRow.modelData.secured ? " *" : "")
-                            elide: Text.ElideRight
-                            font.family: Theme.monoFont
-                            font.pixelSize: 12
-                            color: wifiRow.modelData.inUse ? Theme.text1
-                                   : wifiRow.modelData.known ? Theme.text2
-                                   : Theme.text4
-                        }
-
-                        Text {
-                            id: wifiStatus
-                            anchors.right: parent.right
-                            text: wifiRow.busy ? "\u2026"
-                                  : wifiRow.confirming ? "confirm down?" : ""
-                            font.family: Theme.monoFont
-                            font.pixelSize: 11
-                            color: wifiRow.confirming
-                                       ? Theme.urgent : Theme.text2
-                        }
-
-                        // Unknown secured networks aren't clickable —
-                        // no password entry in a pointer-only panel.
-                        MouseArea {
-                            anchors.fill: parent
-                            enabled: wifiRow.clickable && !wifiRow.busy
-                            onClicked: {
-                                if (wifiRow.modelData.inUse) {
-                                    // NM profile name == SSID for
-                                    // standard NM-created profiles.
-                                    panel._toggleLink(
-                                        wifiRow.modelData.ssid, true);
-                                } else {
-                                    panel._confirmName = "";
-                                    // `connection up`, never `device
-                                    // wifi connect` — the latter can
-                                    // duplicate profiles.
-                                    NetworkService.activate(
-                                        wifiRow.modelData.ssid);
-                                }
+                        name: modelData.name + (_open ? "" : " *")
+                        key: "wifi:" + modelData.name
+                        leading: panel._bars(modelData.signalStrength)
+                        active: modelData.connected
+                        busy: modelData.stateChanging
+                        // Unknown secured networks need a password —
+                        // not enterable in a pointer-only panel.
+                        clickable: modelData.connected || modelData.known || _open
+                        nameColor: modelData.connected ? Theme.text1
+                            : clickable ? Theme.text2 : Theme.text4
+                        idleStatus: modelData.connected ? "up" : ""
+                        onClicked: {
+                            if (modelData.connected)
+                                panel._guardedDown(key, () => NetworkService.disconnectNetwork(modelData));
+                            else {
+                                panel._confirmKey = "";
+                                NetworkService.connectNetwork(modelData);
                             }
                         }
                     }
                 }
 
                 Text {
-                    visible: NetworkService.scanning
-                    text: "scanning\u2026"
+                    visible: NetworkService.wifiEnabled && NetworkService.wifiNetworks.length === 0
+                    text: "searching\u2026"
                     font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.pixelSize: Theme.fontMeta
                     color: Theme.text4
-                }
-
-                Text {
-                    visible: NetworkService.wifiNetworks.length === 0
-                                 && !NetworkService.scanning
-                    text: "no networks"
-                    font.family: Theme.monoFont
-                    font.pixelSize: 11
-                    color: Theme.text4
-                }
-
-                Text {
-                    text: "rescan"
-                    font.family: Theme.monoFont
-                    font.pixelSize: 11
-                    color: Theme.text3
-
-                    MouseArea {
-                        anchors.fill: parent
-                        anchors.margins: -4
-                        enabled: !NetworkService.scanning
-                        onClicked: NetworkService.rescan()
-                    }
                 }
             }
 
             // ── VPN ──────────────────────────────────────────────
             Column {
-                id: vpnSection
                 spacing: 6
+                visible: NetworkService.vpnConnections.length > 0
+                             || NetworkService.tailscaleUp
 
-                readonly property var vpns:
-                    NetworkService.savedConnections.filter(c =>
-                        c.type === "vpn" || c.type === "wireguard")
-
-                visible: vpnSection.vpns.length > 0
-                             || NetworkService._tailscale
-
-                Text {
-                    text: "vpn"
-                    font.family: Theme.monoFont
-                    font.pixelSize: 10
-                    color: Theme.text4
-                }
+                SectionLabel { label: "vpn" }
 
                 Repeater {
-                    model: vpnSection.vpns
+                    model: NetworkService.vpnConnections
 
                     // VPN down is never connectivity-fatal — no confirm.
                     delegate: NetRow {
-                        id: vpnRow
                         required property var modelData
-                        name: vpnRow.modelData.name
-                        active: vpnRow.modelData.active
-                        onToggled: {
-                            panel._confirmName = "";
-                            if (vpnRow.active)
-                                NetworkService.deactivate(vpnRow.name);
-                            else
-                                NetworkService.activate(vpnRow.name);
+                        name: modelData.name
+                        active: modelData.active
+                        busy: NetworkService.busyVpn === modelData.name
+                        onClicked: {
+                            panel._confirmKey = "";
+                            NetworkService.toggleVpn(modelData.name, modelData.active);
                         }
                     }
                 }
 
                 // Read-only — `tailscale up` may need a browser auth
                 // flow, which a pointer-only panel can't host.
-                Text {
-                    visible: NetworkService._tailscale
-                    text: "tailscale \u00b7 up"
-                    font.family: Theme.monoFont
-                    font.pixelSize: 12
-                    color: Theme.text2
+                NetRow {
+                    visible: NetworkService.tailscaleUp
+                    name: "tailscale"
+                    active: true
+                    clickable: false
                 }
             }
         }

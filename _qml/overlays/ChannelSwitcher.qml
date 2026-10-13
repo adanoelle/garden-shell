@@ -20,6 +20,14 @@ OverlayBase {
 
     property int _selectedIndex: 0
 
+    /// Workspaces worth listing: named ones, plus unnamed ones holding
+    /// windows (skips niri's trailing empty workspace per output).
+    readonly property var _items: CompositorService.workspaces
+        .filter(w => w.name || w.windowCount > 0)
+
+    readonly property bool _multiOutput:
+        Object.keys(CompositorService.outputs).length > 1
+
     // ── Toggle ────────────────────────────────────────────────────────
 
     Connections {
@@ -30,12 +38,9 @@ OverlayBase {
     // ── Show-init hook ────────────────────────────────────────────────
 
     function _onBeforeShow() {
-        // Pre-select the active workspace.
-        const ws = CompositorService.workspaces;
-        switcher._selectedIndex = 0;
-        for (let i = 0; i < ws.length; i++) {
-            if (ws[i].active) { switcher._selectedIndex = i; break; }
-        }
+        // Pre-select the focused workspace.
+        const i = switcher._items.findIndex(w => w.focused);
+        switcher._selectedIndex = Math.max(0, i);
         keyHandler.forceActiveFocus();
     }
 
@@ -53,8 +58,8 @@ OverlayBase {
         }
 
         Keys.onDownPressed: {
-            const ws = CompositorService.workspaces;
-            if (switcher._selectedIndex < ws.length - 1) switcher._selectedIndex++;
+            if (switcher._selectedIndex < switcher._items.length - 1)
+                switcher._selectedIndex++;
         }
 
         Keys.onReturnPressed: switcher._switchToSelected()
@@ -88,7 +93,7 @@ OverlayBase {
                 anchors.margins: 1
 
                 Repeater {
-                    model: CompositorService.workspaces
+                    model: switcher._items
 
                     delegate: Rectangle {
                         id: channelDelegate
@@ -99,6 +104,14 @@ OverlayBase {
                         height: channelCol.height + 16
                         color: index === switcher._selectedIndex
                             ? Theme.baseHl : "transparent"
+
+                        // Selected left bar (ResultItem idiom).
+                        Rectangle {
+                            width: 2
+                            height: parent.height
+                            color: Theme.accent
+                            visible: channelDelegate.index === switcher._selectedIndex
+                        }
 
                         Column {
                             id: channelCol
@@ -118,58 +131,56 @@ OverlayBase {
                                     id: channelName
                                     anchors.left: parent.left
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: channelDelegate.modelData.name
+                                    text: channelDelegate.modelData.label
                                     color: Theme.text1
                                     font.family: Theme.sansFont
-                                    font.pixelSize: 14
-                                    font.bold: channelDelegate.modelData.active
+                                    font.pixelSize: Theme.fontLarge
+                                    font.weight: channelDelegate.modelData.focused
+                                        ? Font.DemiBold : Font.Normal
                                 }
 
                                 Text {
                                     anchors.right: parent.right
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: {
-                                        const n = channelDelegate.modelData.columnCount;
-                                        return n + (n === 1 ? " col" : " cols");
+                                        const ws = channelDelegate.modelData;
+                                        const n = ws.columns.length;
+                                        const f = ws.floating.length;
+                                        const pages = n + (n === 1 ? " page" : " pages")
+                                            + (f > 0 ? " +" + f : "");
+                                        return switcher._multiOutput
+                                            ? ws.output + " \u00b7 " + pages : pages;
                                     }
                                     color: Theme.text3
                                     font.family: Theme.monoFont
-                                    font.pixelSize: 11
+                                    font.pixelSize: Theme.fontMeta
                                 }
                             }
 
-                            // Window labels row (only when workspace has windows).
-                            Row {
-                                spacing: 6
-                                visible: channelDelegate.modelData.columnCount > 0
+                            // Pages in strip order, then floating windows.
+                            // Flow wraps instead of running past the panel.
+                            Flow {
+                                width: parent.width
+                                spacing: Theme.space2
+                                visible: channelDelegate.modelData.windowCount > 0
 
                                 Repeater {
-                                    model: {
-                                        const wsId = NiriAdapter.workspaceId(
-                                            channelDelegate.modelData.name);
-                                        if (wsId < 0) return [];
-                                        return NiriAdapter.windowsForWorkspace(wsId);
-                                    }
+                                    model: channelDelegate.modelData.columns
+                                        .concat(channelDelegate.modelData.floating)
 
                                     delegate: Text {
                                         required property var modelData
 
-                                        text: {
-                                            const prefix = modelData.isFocused
-                                                && channelDelegate.modelData.active
-                                                ? "\u25cf" : "";
-                                            const label = modelData.appId
-                                                || modelData.title.split(" ")[0]
-                                                || "\u00b7";
-                                            return prefix + label;
-                                        }
-                                        color: modelData.isFocused
-                                            && channelDelegate.modelData.active
-                                            ? Theme.text1 : Theme.text4
-                                        font.family: Theme.monoFont
-                                        font.pixelSize: 11
-                                        elide: Text.ElideRight
-                                        maximumLineCount: 1
+                                        readonly property bool _here: modelData.focused
+                                            && channelDelegate.modelData.focused
+
+                                        text: (_here ? "\u25cf " : "")
+                                            + ConfigService.appLabel(modelData.appId, modelData.title)
+                                            + (modelData.tiles > 1 ? " \u00d7" + modelData.tiles : "")
+                                        color: _here ? Theme.text1
+                                            : modelData.active ? Theme.text2 : Theme.text3
+                                        font.family: Theme.sansFont
+                                        font.pixelSize: Theme.fontBody
                                     }
                                 }
                             }
@@ -182,7 +193,7 @@ OverlayBase {
                             anchors.right: parent.right
                             anchors.leftMargin: 12
                             anchors.rightMargin: 12
-                            height: channelDelegate.index < CompositorService.workspaces.length - 1
+                            height: channelDelegate.index < switcher._items.length - 1
                                 ? 1 : 0
                             color: Theme.borderSub
                             visible: height > 0
@@ -209,9 +220,9 @@ OverlayBase {
     // ── Switch to selected workspace ──────────────────────────────────
 
     function _switchToSelected() {
-        const ws = CompositorService.workspaces;
+        const ws = switcher._items;
         if (_selectedIndex >= 0 && _selectedIndex < ws.length) {
-            CompositorService.focusWorkspace(ws[_selectedIndex].name);
+            CompositorService.focusWorkspaceEntry(ws[_selectedIndex]);
         }
         _close();
     }

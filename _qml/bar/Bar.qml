@@ -6,10 +6,17 @@ import ".."
 import "../compositor"
 import "../services"
 
-/// Top bar panel anchored to the top of each screen.
+/// Bar for one output.
 ///
-/// Displays channel dots, active channel name with column indicators,
-/// and a clock. Height adapts based on ModeService.currentHeight.
+/// Each bar follows its own output: its channel dots, the channel
+/// visible there (name + pages), and that channel's bar mode. The
+/// output holding keyboard focus is drawn at full strength; the other
+/// bars dim their channel name.
+///
+/// Minimal mode is a 2 px rule that expands to a standard-height bar
+/// while hovered (spec §2: "2px → 30px on hover"). The exclusive zone
+/// stays 2 px, so the expanded bar overlays windows rather than
+/// shoving them down.
 PanelWindow {
     id: bar
 
@@ -20,62 +27,126 @@ PanelWindow {
     // places every bar on the focused screen (no bar on a docked
     // monitor).
 
+    readonly property var output: CompositorService.outputState(bar.screen?.name ?? "")
+    readonly property var workspace: bar.output?.active ?? null
+    readonly property bool outputFocused: bar.output?.focused ?? false
+    readonly property string channel: bar.workspace?.name ?? ""
+
+    readonly property string barMode: ModeService.barModeFor(bar.channel)
+    readonly property bool minimal: bar.barMode === "minimal-bar"
+    readonly property bool showContent: !bar.minimal || bar._revealed
+    readonly property bool _onTop: ConfigService.barPosition !== "bottom"
+
+    /// Minimal bar hovered open.
+    property bool _revealed: false
+
     anchors {
-        top: ConfigService.barPosition === "top"
-        bottom: ConfigService.barPosition === "bottom"
+        top: bar._onTop
+        bottom: !bar._onTop
         left: true
         right: true
     }
 
-    implicitHeight: ModeService.currentHeight
-    exclusiveZone: implicitHeight
+    implicitHeight: bar.showContent
+        ? ModeService.heightFor(bar.minimal ? "standard-bar" : bar.barMode)
+        : ModeService.minimalHeight
+    exclusiveZone: ModeService.heightFor(bar.barMode)
     color: Theme.baseDeep
 
-    // ── Content (hidden in minimal mode) ────────────────────────────
+    // ── Minimal-mode reveal ─────────────────────────────────────────
+
+    HoverHandler {
+        id: hover
+        onHoveredChanged: {
+            if (hovered) {
+                collapse.stop();
+                if (bar.minimal) bar._revealed = true;
+            } else {
+                collapse.restart();
+            }
+        }
+    }
+
+    Timer {
+        id: collapse
+        interval: 400
+        onTriggered: {
+            bar._revealed = false;
+            tip.hide(null);
+        }
+    }
+
+    onMinimalChanged: if (!bar.minimal) bar._revealed = false
+
+    BarTooltip {
+        id: tip
+        anchor.window: bar
+    }
+
+    // ── Content ─────────────────────────────────────────────────────
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 12
-        anchors.rightMargin: 12
-        spacing: 8
-        visible: ModeService.showContent
-        opacity: ModeService.showContent ? 1.0 : 0.0
+        anchors.leftMargin: Theme.space2
+        anchors.rightMargin: Theme.space2
+        spacing: Theme.space1
+        visible: bar.showContent
 
-        // Channel dots (inactive workspaces).
-        Repeater {
-            model: CompositorService.workspaces
+        // Channel dots — every workspace on this output, in order.
+        Row {
+            Layout.fillHeight: true
 
-            delegate: BarDot {
-                required property var modelData
-                workspace: modelData
+            Repeater {
+                model: bar.output?.workspaces ?? []
+
+                delegate: BarDot {
+                    required property var modelData
+                    workspace: modelData
+                    outputFocused: bar.outputFocused
+                    tip: tip
+                }
             }
         }
 
-        // Active channel display with column indicators.
+        // Visible channel: name + pages.
         BarChannel {
-            Layout.fillWidth: false
+            Layout.fillHeight: true
+            Layout.maximumWidth: bar.width * 0.6
+            clip: true
+            workspace: bar.workspace
+            outputFocused: bar.outputFocused
+            showTitle: bar.barMode === "full-bar"
+            viewWidth: bar.width
+            tip: tip
         }
 
-        // Spacer.
-        Item {
-            Layout.fillWidth: true
+        Item { Layout.fillWidth: true }
+
+        BarSystemState {
+            Layout.fillHeight: true
+            channel: bar.channel
+            screen: bar.screen
+            tip: tip
         }
 
-        // Volume and brightness indicators.
-        BarSystemState {}
-
-        // Clock.
-        BarClock {}
+        BarClock {
+            Layout.fillHeight: true
+            showDate: bar.barMode === "full-bar"
+            tip: tip
+        }
     }
 
-    // ── Minimal mode: thin accent line ──────────────────────────────
+    // ── Edge rule ───────────────────────────────────────────────────
+    //
+    // 1 px border-sub along the edge facing the desktop, in every mode —
+    // the minimal bar is just this rule on base-deep.
 
     Rectangle {
-        anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
+        anchors.bottom: bar._onTop ? parent.bottom : undefined
+        anchors.top: bar._onTop ? undefined : parent.top
         height: 1
         color: Theme.borderSub
-        visible: !ModeService.showContent
     }
 }

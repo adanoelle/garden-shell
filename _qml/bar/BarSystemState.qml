@@ -1,156 +1,213 @@
 import QtQuick
+import Quickshell.Services.Mpris
 import Quickshell.Services.SystemTray
 import ".."
 import "../services"
 
-/// Ambient volume and brightness indicators for the bar.
+/// Right-hand system slots: media, volume, brightness, network,
+/// bluetooth, battery, tray. Text-first; every slot is a BarSlot, so
+/// hover, hit targets and tooltips behave the same everywhere.
 ///
-/// Two compact slots — `v{n}` and `b{n}` — sit at near-invisible text-4
-/// opacity at rest. When a value changes the affected slot brightens to
-/// text-1 for 1.5s then fades back. Muted state shows `vm` in Theme.urgent.
-/// Hidden entirely in minimal bar mode.
+///   v{n} b{n} — ambient: rest at text-4, brighten on change (1.5 s).
+///               Volume: click mutes, scroll steps 5%.
+///   network   — SSID / "eth" / "offline", accent dot = VPN/tailscale,
+///               urgent on a captive portal / limited connectivity.
+///   bt        — "bt", or the connected device's name.
+///   battery   — persistent: charge is glanceable state, not an event.
+///   media     — channels with the `mpris-ambient` mode only.
+///
+/// Panels open on this bar's screen.
 Row {
     id: root
 
-    spacing: 8
-    visible: ModeService.showContent
+    /// Channel visible on this bar's output (mode lookups).
+    property string channel: ""
 
-    // Notification suppression indicator (spec §6): dot while
-    // suppressed — near-invisible text-4 when the queue is empty,
-    // accent once notifications have queued silently.
-    Rectangle {
-        anchors.verticalCenter: parent.verticalCenter
-        width: 5
-        height: 5
-        radius: 2.5
-        visible: NotificationService.suppressed
-        color: NotificationService.queuedCount > 0 ? Theme.accent : Theme.text4
+    /// The owning bar's screen — panels open there.
+    property var screen: null
+
+    /// The owning bar's BarTooltip.
+    property var tip: null
+
+    // ── Media (mpris-ambient) ───────────────────────────────────────
+
+    readonly property bool _mediaMode: ModeService.modesFor(root.channel).includes("mpris-ambient")
+
+    // Prefer a playing player; else any player with a track loaded.
+    readonly property var _player: {
+        const players = Mpris.players.values;
+        return players.find(p => p.isPlaying)
+            ?? players.find(p => (p.trackTitle ?? "") !== "")
+            ?? null;
     }
 
-    BarStateSlot {
+    BarSlot {
+        visible: root._mediaMode && root._player !== null
+        text: {
+            const p = root._player;
+            if (!p) return "";
+            const artist = p.trackArtist ?? "";
+            return (p.isPlaying ? "\u25b8 " : "\u2016 ") + p.trackTitle
+                + (artist ? " \u2022 " + artist : "");
+        }
+        fontFamily: Theme.sansFont
+        maxTextWidth: 260
+        color: Theme.text3
+        interactive: root._player?.canTogglePlaying ?? false
+        tip: root.tip
+        tooltip: root._player?.identity ?? ""
+        onClicked: root._player.togglePlaying()
+    }
+
+    // ── Notification suppression (spec §6) ──────────────────────────
+    //
+    // Dot while suppressed: text-4 when the queue is empty, accent once
+    // notifications have queued silently.
+
+    BarSlot {
+        visible: NotificationService.suppressed
+        interactive: true
+        tip: root.tip
+        tooltip: "notifications suppressed"
+            + (NotificationService.queuedCount > 0
+                ? " \u2022 " + NotificationService.queuedCount + " queued" : "")
+        onClicked: HookService.notificationCenterToggled()
+
+        Rectangle {
+            width: 5
+            height: 5
+            radius: 2.5
+            color: NotificationService.queuedCount > 0 ? Theme.accent : Theme.text4
+        }
+    }
+
+    // ── Volume ──────────────────────────────────────────────────────
+
+    BarSlot {
         id: volSlot
-        prefix: "v"
-        value: AudioService.muted
-                   ? "m"
-                   : Math.round(AudioService.volume * 100).toString()
+        ambient: true
+        text: "v" + (AudioService.muted ? "m" : Math.round(AudioService.volume * 100))
         activeColor: AudioService.muted ? Theme.urgent : Theme.text1
+        interactive: true
+        tip: root.tip
+        tooltip: (AudioService.muted ? "muted"
+                  : "volume " + Math.round(AudioService.volume * 100) + "%")
+            + (AudioService.sink?.description ? " \u2022 " + AudioService.sink.description : "")
+        onClicked: AudioService.toggleMute()
+        onScrolled: steps => AudioService.setVolume(AudioService.volume + steps * 0.05)
 
         Connections {
             target: AudioService
-            function onStateChanged() { volSlot._trigger() }
+            function onStateChanged() { volSlot.pulse(); }
         }
     }
 
-    BarStateSlot {
+    // ── Brightness ──────────────────────────────────────────────────
+
+    BarSlot {
         id: briSlot
-        prefix: "b"
-        value: Math.round(BrightnessService.brightness * 100).toString()
+        visible: BrightnessService.available
+        ambient: true
+        text: "b" + Math.round(BrightnessService.brightness * 100)
+        tip: root.tip
+        tooltip: "brightness " + Math.round(BrightnessService.brightness * 100) + "%"
 
         Connections {
             target: BrightnessService
-            function onStateChanged() { briSlot._trigger() }
+            function onStateChanged() { briSlot.pulse(); }
         }
     }
 
-    // Network (Phase E) — text-first status: SSID on wifi, "eth" on
-    // wired, "offline" when disconnected. Accent dot = VPN/tailscale.
-    // Click opens the NetworkPanel dropdown. The Row is a positioner
-    // (sizes itself FROM children), so the MouseArea lives on a
-    // wrapper Item rather than inside it.
-    Item {
-        anchors.verticalCenter: parent.verticalCenter
-        implicitWidth: netRow.width
-        implicitHeight: netRow.height
+    // ── Network ─────────────────────────────────────────────────────
 
-        Row {
-            id: netRow
-            spacing: 5
+    BarSlot {
+        text: NetworkService.connectionType === "wifi" ? NetworkService.ssid
+            : NetworkService.connectionType === "wired" ? "eth" : "offline"
+        maxTextWidth: 140
+        // Captive portal / limited connectivity reads as urgent.
+        color: NetworkService.connectivityIssue !== "" ? Theme.urgent : Theme.text3
+        interactive: true
+        tip: root.tip
+        tooltip: (NetworkService.connectionType === "wifi" ? "wifi \u2022 " + NetworkService.ssid
+                  : NetworkService.connectionType === "wired" ? "wired" : "offline")
+            + (NetworkService.connectivityIssue !== ""
+                ? " \u2022 " + (NetworkService.connectivityIssue === "portal"
+                    ? "captive portal" : NetworkService.connectivityIssue) : "")
+            + (NetworkService.vpnActive ? " \u2022 vpn" : "")
+        onClicked: HookService.networkPanelToggled(root.screen)
 
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 5
-                height: 5
-                radius: 2.5
-                visible: NetworkService.vpnActive
-                color: Theme.accent
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: NetworkService.connectionType === "wifi"
-                          ? NetworkService.ssid
-                          : NetworkService.connectionType === "wired"
-                              ? "eth" : "offline"
-                font.family: Theme.monoFont
-                font.pixelSize: 11
-                color: Theme.text3
-            }
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            anchors.margins: -4   // clickable halo, same idiom as tray dot
-            onClicked: HookService.networkPanelToggled()
+        Rectangle {
+            visible: NetworkService.vpnActive
+            width: 5
+            height: 5
+            radius: 2.5
+            color: Theme.accent
         }
     }
 
-    // Bluetooth — hidden when powered off, shows "bt" when powered
-    // but nothing connected, shows device name when connected.
-    // Click opens the BluetoothPanel dropdown.
-    Item {
-        anchors.verticalCenter: parent.verticalCenter
-        visible: true
-        implicitWidth: btText.implicitWidth
-        implicitHeight: btText.implicitHeight
+    // ── Bluetooth ───────────────────────────────────────────────────
 
-        Text {
-            id: btText
-            text: BluetoothService.anyConnected
-                      ? BluetoothService.connectedDevices[0].name
-                      : "bt"
-            font.family: Theme.monoFont
-            font.pixelSize: 11
-            color: BluetoothService.anyConnected ? Theme.text3 : Theme.text4
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            anchors.margins: -4
-            onClicked: HookService.bluetoothPanelToggled()
-        }
+    BarSlot {
+        text: BluetoothService.anyConnected
+            ? BluetoothService.connectedDevices[0].name : "bt"
+        maxTextWidth: 140
+        color: BluetoothService.anyConnected ? Theme.text3 : Theme.text4
+        interactive: true
+        tip: root.tip
+        tooltip: !BluetoothService.powered ? "bluetooth off"
+            : BluetoothService.anyConnected
+                ? "bluetooth \u2022 " + BluetoothService.connectedDevices
+                    .map(d => d.name + (d.batteryAvailable ? " " + Math.round(d.battery * 100) + "%" : ""))
+                    .join(", ")
+                : "bluetooth \u2022 no devices"
+        onClicked: HookService.bluetoothPanelToggled(root.screen)
     }
 
-    // Battery (Phase E) — persistent text-3 percentage, unlike the
-    // ambient v/b slots: charge is glanceable state, not an event.
-    // Urgent below 15% while discharging; `+` suffix on AC. Hidden
-    // entirely when the machine has no battery.
-    Text {
-        anchors.verticalCenter: parent.verticalCenter
+    // ── Battery ─────────────────────────────────────────────────────
+    //
+    // Urgent at ≤15% while discharging; `+` suffix on AC. Hidden on
+    // machines without a battery.
+
+    BarSlot {
         visible: BatteryService.available
         text: Math.round(BatteryService.percentage * 100) + "%"
-              + (BatteryService.charging ? "+" : "")
-        font.family: Theme.monoFont
-        font.pixelSize: 11
+            + (BatteryService.charging ? "+" : "")
         color: BatteryService.low ? Theme.urgent : Theme.text3
+        tip: root.tip
+        tooltip: {
+            if (BatteryService.charging) {
+                const t = BatteryService.timeToFull;
+                return t > 0 ? "charging \u2022 full in " + root._duration(t) : "on ac power";
+            }
+            const t = BatteryService.timeToEmpty;
+            return t > 0 ? root._duration(t) + " remaining" : "on battery";
+        }
     }
 
-    // Tray (Phase E) — single dot when tray items exist (no icon
-    // grid); click opens the TrayPanel dropdown. Urgent when any item
-    // needs attention.
-    Rectangle {
-        anchors.verticalCenter: parent.verticalCenter
-        width: 5
-        height: 5
-        radius: 2.5
-        visible: SystemTray.items.values.length > 0
-        color: SystemTray.items.values.some(
-                   i => i.status === Status.NeedsAttention)
-                   ? Theme.urgent : Theme.text3
+    // ── Tray ────────────────────────────────────────────────────────
+    //
+    // Single dot when tray items exist (no icon grid); urgent when any
+    // item needs attention. Click opens the TrayPanel.
 
-        MouseArea {
-            anchors.fill: parent
-            anchors.margins: -4   // clickable halo around the 5px dot
-            onClicked: HookService.trayToggled()
+    BarSlot {
+        visible: SystemTray.items.values.length > 0
+        interactive: true
+        tip: root.tip
+        tooltip: SystemTray.items.values.map(i => i.title || i.id).join(", ")
+        onClicked: HookService.trayToggled(root.screen)
+
+        Rectangle {
+            width: 5
+            height: 5
+            radius: 2.5
+            color: SystemTray.items.values.some(i => i.status === Status.NeedsAttention)
+                ? Theme.urgent : Theme.text3
         }
+    }
+
+    function _duration(seconds: real): string {
+        const m = Math.round(seconds / 60);
+        const h = Math.floor(m / 60);
+        return h > 0 ? h + "h " + String(m % 60).padStart(2, "0") + "m" : m + "m";
     }
 }

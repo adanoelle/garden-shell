@@ -31,7 +31,6 @@ Rectangle {
     property bool _closing: false
 
     implicitHeight: content.implicitHeight + 24
-    radius: 2
     color: Theme.baseRaised
     border.width: 1
     border.color: root.critical ? Theme.urgent : Theme.border
@@ -136,7 +135,7 @@ Rectangle {
                 text: root.notification.appName || "notification"
                 color: Theme.text1
                 font.family: Theme.sansFont
-                font.pixelSize: 13
+                font.pixelSize: Theme.fontTitle
                 font.bold: true
                 elide: Text.ElideRight
             }
@@ -148,7 +147,7 @@ Rectangle {
                 text: root.arrived
                 color: Theme.text4
                 font.family: Theme.monoFont
-                font.pixelSize: 10
+                font.pixelSize: Theme.fontCaption
             }
         }
 
@@ -159,7 +158,7 @@ Rectangle {
             text: root.notification.summary
             color: Theme.text2
             font.family: Theme.sansFont
-            font.pixelSize: 12
+            font.pixelSize: Theme.fontBody
             font.bold: true
             wrapMode: Text.Wrap
             maximumLineCount: 2
@@ -174,7 +173,7 @@ Rectangle {
             text: root.notification.body
             color: Theme.text2
             font.family: Theme.sansFont
-            font.pixelSize: 12
+            font.pixelSize: Theme.fontBody
             wrapMode: Text.Wrap
             maximumLineCount: 4
             elide: Text.ElideRight

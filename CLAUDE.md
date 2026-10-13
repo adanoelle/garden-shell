@@ -85,6 +85,15 @@ The QML shell is served to Quickshell via a symlink:
 Quickshell reads directly from the source tree. It is started by niri
 (`spawn-at-startup "quickshell" "-c" "garden"`) and runs as a daemon.
 
+On machines where Home Manager deploys `~/.config/quickshell/garden` as a
+store copy (the `garden.shell` aspect), source edits do not hot-reload.
+`just qs-dev` runs an instance from `_qml/` in the foreground and restores
+the deployed shell on Ctrl-C. **While it runs, niri keybinds and the
+before-sleep lock are dead**: they call `qs -c garden ipc …`, which
+resolves to the deployed config path, and the dev instance is keyed by
+its source path. Drive it with `qs ipc -p _qml call garden …`; keep
+sessions short.
+
 ### Three tiers of change
 
 | What changed | How it takes effect |
@@ -214,6 +223,21 @@ Use these shared components instead of inline implementations:
 | Result / list row | `ResultItem` | `_qml/components/ResultItem.qml` |
 | Action button | `GButton` | `_qml/components/GButton.qml` |
 | Keyboard hint footer | `HintLabel` | `_qml/components/HintLabel.qml` |
+| Bar text slot (hover, hit target, tooltip) | `BarSlot` | `_qml/bar/BarSlot.qml` |
+
+**Design tokens** live in `Theme.qml` — use them instead of literals:
+`fontCaption/Meta/Body/Title/Large/Heading` (10–16 px), `space1–4`
+(4 px grid), `motionQuick/Fast/Base` (120/150/200 ms). Containers have
+square corners (no `radius`); only status dots are round. Sans
+(`Theme.sansFont`) for human-facing text — names, actions, labels; mono
+for data and metadata — numbers, times, keys, ids, statuses. In sans
+strings use `\u2022` as the separator: M PLUS 1 gives `·` zero width.
+
+**Compositor state is per output.** `CompositorService.outputs[name]`
+holds each output's workspaces (in index order) and its `active`
+workspace; columns are in strip order with stacked tiles grouped. Bars
+look up their own output (`outputState(screen.name)`) and their own
+channel's bar mode (`ModeService.barModeFor`).
 
 Import components with `import "../components"` from overlay files.
 

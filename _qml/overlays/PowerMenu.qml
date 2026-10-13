@@ -15,7 +15,7 @@ OverlayBase {
     id: menu
 
     _namespace:    "garden-power"
-    animDuration:  200
+    animDuration:  Theme.motionBase
     contentTarget: content
     slideTarget:   contentSlide
 
@@ -194,8 +194,8 @@ OverlayBase {
                                 ? Theme.urgent
                                 : actionDelegate.index === menu._selectedIndex
                                     ? Theme.text1 : Theme.text3
-                            font.family: Theme.monoFont
-                            font.pixelSize: 14
+                            font.family: Theme.sansFont
+                            font.pixelSize: Theme.fontLarge
                             font.bold: actionDelegate.index === menu._selectedIndex
 
                             MouseArea {
@@ -213,7 +213,7 @@ OverlayBase {
                             text: "\u00b7"
                             color: Theme.text4
                             font.family: Theme.monoFont
-                            font.pixelSize: 14
+                            font.pixelSize: Theme.fontLarge
                         }
                     }
                 }
