@@ -61,10 +61,14 @@
             run mkdir -p "$(dirname "${stateFile}")"
             run sh -c 'printf "%s\n" "$1" > "$2"' _ "${qmlSource}" "${stateFile}"
 
-            # The live garden instance: argv is "<wrapper> -c garden".
-            # Its comm is the truncated ".quickshell-wra", so match argv.
-            pid=$(${pgrep} -u "$USER" -f -- '/quickshell -c garden$' | head -n1)
-            [ -n "$pid" ] || return 0
+            # The live garden instance(s): argv is "<wrapper path or bare
+            # name> -c garden". comm is the truncated ".quickshell-wra",
+            # so match argv. A shell launched by bare name ("quickshell -c
+            # garden") must match too, and if more than one is running
+            # (duplicate bars) all of them are replaced by a single one.
+            pids=$(${pgrep} -u "$USER" -f -- '(^|/)quickshell -c garden$' || true)
+            [ -n "$pids" ] || return 0
+            pid=$(printf '%s\n' "$pids" | head -n1)
 
             # niri comes from the consumer (wrapped with nixGL on foreign
             # distros); look in the profile, not the activation PATH.
@@ -76,10 +80,15 @@
             fi
 
             argv0=$(tr '\0' '\n' < "/proc/$pid/cmdline" | head -n1)
-            echo "garden: QML changed, restarting the shell (pid $pid)"
-            run kill "$pid"
+            echo "garden: QML changed, restarting the shell (pid $(printf '%s ' $pids))"
+            # shellcheck disable=SC2086 # word-split the pid list on purpose
+            run kill $pids
             for _ in 1 2 3 4 5 6 7 8 9 10; do
-              kill -0 "$pid" 2>/dev/null || break
+              alive=0
+              for p in $pids; do
+                kill -0 "$p" 2>/dev/null && alive=1
+              done
+              [ "$alive" = 0 ] && break
               sleep 0.2
             done
             run "$niri_bin" msg action spawn -- "$argv0" -c garden

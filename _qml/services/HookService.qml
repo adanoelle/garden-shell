@@ -57,6 +57,20 @@ Singleton {
             return Theme.activePalette;
         }
 
+        /// Set a UI face: role is "sans" or "mono"; family as fontconfig
+        /// names it (e.g. "Liberation Sans", "CommitMono"). Persists to
+        /// settings.json, same as Settings → palette → typography.
+        function setFont(role: string, family: string): string {
+            if (role !== "sans" && role !== "mono") return "role must be sans or mono";
+            if (Qt.fontFamilies().indexOf(family) < 0) return "font not installed: " + family;
+            ConfigService.setFont(role, family);
+            return role + " font set to " + family;
+        }
+
+        function getFonts(): string {
+            return "sans=" + Theme.sansFont + " mono=" + Theme.monoFont;
+        }
+
         function toggleLauncher(): string {
             root.launcherToggled();
             return "toggled launcher";
