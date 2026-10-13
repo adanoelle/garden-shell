@@ -45,7 +45,15 @@ PanelWindow {
 
     Connections {
         target: HookService
-        function onTrayToggled() { panel.visible = !panel.visible; }
+        function onTrayToggled(screen) { panel._toggle(screen); }
+        function onNetworkPanelToggled() { panel.visible = false; }  // one panel at a time
+        function onBluetoothPanelToggled() { panel.visible = false; }  // one panel at a time
+    }
+
+    /// Open on the clicked bar's screen (null = compositor's choice).
+    function _toggle(screen) {
+        if (!panel.visible) panel.screen = screen;
+        panel.visible = !panel.visible;
     }
 
     QsMenuOpener {
@@ -69,8 +77,8 @@ PanelWindow {
         anchors.bottom: ConfigService.barPosition === "bottom"
                             ? parent.bottom : undefined
         anchors.right: parent.right
-        anchors.topMargin: ModeService.currentHeight + 4
-        anchors.bottomMargin: ModeService.currentHeight + 4
+        anchors.topMargin: ModeService.panelOffset
+        anchors.bottomMargin: ModeService.panelOffset
         anchors.rightMargin: 12
 
         width: content.implicitWidth + 32
@@ -101,10 +109,10 @@ PanelWindow {
                         required property var modelData
 
                         text: (itemRow.modelData.title || itemRow.modelData.id)
-                              + " \u00b7 "
+                              + " \u2022 "
                               + panel._statusText(itemRow.modelData.status)
-                        font.family: Theme.monoFont
-                        font.pixelSize: 12
+                        font.family: Theme.sansFont
+                        font.pixelSize: Theme.fontBody
                         color: itemRow.modelData.status === Status.NeedsAttention
                                    ? Theme.urgent : Theme.text2
 
@@ -131,7 +139,7 @@ PanelWindow {
                     visible: SystemTray.items.values.length === 0
                     text: "no tray items"
                     font.family: Theme.monoFont
-                    font.pixelSize: 12
+                    font.pixelSize: Theme.fontBody
                     color: Theme.text4
                 }
             }
@@ -144,8 +152,8 @@ PanelWindow {
 
                 Text {
                     text: "\u2039 back"
-                    font.family: Theme.monoFont
-                    font.pixelSize: 12
+                    font.family: Theme.sansFont
+                    font.pixelSize: Theme.fontBody
                     color: Theme.text4
 
                     MouseArea {
@@ -192,8 +200,8 @@ PanelWindow {
                                   + entryRow.modelData.text
                                   + (entryRow.modelData.hasChildren
                                          ? " \u203a" : "")
-                            font.family: Theme.monoFont
-                            font.pixelSize: 12
+                            font.family: Theme.sansFont
+                            font.pixelSize: Theme.fontBody
                             color: entryRow.modelData.enabled
                                        ? Theme.text2 : Theme.text4
 
@@ -228,7 +236,7 @@ PanelWindow {
         if (entry.buttonType === QsMenuButtonType.CheckBox)
             return entry.checkState === Qt.Checked ? "[x] " : "[ ] ";
         if (entry.buttonType === QsMenuButtonType.RadioButton)
-            return entry.checkState === Qt.Checked ? "(\u00b7) " : "( ) ";
+            return entry.checkState === Qt.Checked ? "(\u2022) " : "( ) ";
         return "";
     }
 }

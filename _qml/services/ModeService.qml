@@ -9,8 +9,11 @@ import "../compositor"
 /// Per-channel mode management.
 ///
 /// Maps each channel (workspace) to a stack of active modes read from
-/// ConfigService. The bar height and visibility of various elements
-/// depend on the current channel's bar mode.
+/// ConfigService. Bars are per output, so bar modes are looked up per
+/// channel (`barModeFor`) — each bar follows the workspace visible on
+/// its own output. The focused-channel properties (`activeModes`,
+/// `currentHeight`, …) serve global consumers: notification suppression
+/// and the anchored panels, which open on the focused output.
 Singleton {
     id: root
 
@@ -20,45 +23,54 @@ Singleton {
     readonly property int standardHeight: 30
     readonly property int minimalHeight:  2
 
-    // ── Computed bar state ───────────────────────────────────────────
+    // ── Per-channel lookups ─────────────────────────────────────────
 
-    /// Current bar height based on the active channel's mode.
-    readonly property int currentHeight: {
-        switch (root.barMode) {
-        case "full-bar":     return root.fullHeight;
-        case "standard-bar": return root.standardHeight;
-        case "minimal-bar":  return root.minimalHeight;
-        default:             return root.standardHeight;
-        }
-    }
-
-    /// Whether the bar should show content (not minimal).
-    readonly property bool showContent: barMode !== "minimal-bar"
-
-    /// Whether to show extended info (date, etc.) — full mode only.
-    readonly property bool showExtended: barMode === "full-bar"
-
-    // ── Mode stack ──────────────────────────────────────────────────
-
-    /// The active channel's mode stack (empty array when unset).
-    readonly property var activeModes: {
-        const channel = CompositorService.activeWorkspace;
+    /// Mode stack for a channel (empty array when unset).
+    function modesFor(channel: string): var {
         const modes = ConfigService.channels?.[channel]?.modes;
         return Array.isArray(modes) ? modes : [];
     }
 
-    /// Whether the active channel has the named mode
+    /// First bar-related mode in a channel's stack, "standard-bar" if none.
+    function barModeFor(channel: string): string {
+        for (const m of root.modesFor(channel)) {
+            if (m.endsWith("-bar")) return m;
+        }
+        return "standard-bar";
+    }
+
+    /// Bar height for a bar mode.
+    function heightFor(barMode: string): int {
+        switch (barMode) {
+        case "full-bar":    return root.fullHeight;
+        case "minimal-bar": return root.minimalHeight;
+        default:            return root.standardHeight;
+        }
+    }
+
+    // ── Focused channel ─────────────────────────────────────────────
+
+    /// The focused channel's mode stack.
+    readonly property var activeModes: root.modesFor(CompositorService.activeWorkspace)
+
+    /// Whether the focused channel has the named mode
     /// (e.g. "suppress-notifications", "mpris-ambient").
     function hasMode(name: string): bool {
         return root.activeModes.includes(name);
     }
 
-    /// The bar mode string for the current channel — first bar-related
-    /// mode in the stack.
-    readonly property string barMode: {
-        for (const m of root.activeModes) {
-            if (m.endsWith("-bar")) return m;
-        }
-        return "standard-bar";
-    }
+    /// The focused channel's bar mode.
+    readonly property string barMode: root.barModeFor(CompositorService.activeWorkspace)
+
+    /// The focused channel's bar height.
+    readonly property int currentHeight: root.heightFor(root.barMode)
+
+    /// Offset for cards dropping from the focused output's bar.
+    ///
+    /// Panel surfaces (exclusive zone 0) are already laid out below the
+    /// bar's exclusive zone, so the bar's height must not be added again.
+    /// A minimal bar reserves only 2 px but is expanded (hovered) when
+    /// clicked, overlaying the top of that space — clear the expansion.
+    readonly property int panelOffset: (root.barMode === "minimal-bar"
+        ? root.standardHeight - root.minimalHeight : 0) + 4
 }

@@ -28,9 +28,11 @@ Singleton {
     signal lockRequested()
     signal powerMenuToggled()
     signal brightnessOsdRequested(real value)
-    signal trayToggled()
-    signal networkPanelToggled()
-    signal bluetoothPanelToggled()
+    // Panel toggles carry the screen to open on (the clicked bar's);
+    // null = let the compositor pick (IPC / keybinds).
+    signal trayToggled(var screen)
+    signal networkPanelToggled(var screen)
+    signal bluetoothPanelToggled(var screen)
 
     // ── IPC handler ─────────────────────────────────────────────────
 
@@ -121,17 +123,17 @@ Singleton {
         }
 
         function toggleTray(): string {
-            root.trayToggled();
+            root.trayToggled(null);
             return "toggled tray panel";
         }
 
         function toggleNetworkPanel(): string {
-            root.networkPanelToggled();
+            root.networkPanelToggled(null);
             return "toggled network panel";
         }
 
         function toggleBluetoothPanel(): string {
-            root.bluetoothPanelToggled();
+            root.bluetoothPanelToggled(null);
             return "toggled bluetooth panel";
         }
 

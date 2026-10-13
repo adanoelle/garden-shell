@@ -34,6 +34,10 @@ Singleton {
     /// On AC power (charging or fully charged).
     readonly property bool charging: root.available && !UPower.onBattery
 
+    /// Seconds until empty (discharging) / full (charging); 0 = unknown.
+    readonly property real timeToEmpty: root.available ? root._device.timeToEmpty : 0
+    readonly property real timeToFull: root.available ? root._device.timeToFull : 0
+
     /// Urgent-display threshold for the bar (≤15%, discharging).
     readonly property bool low: root.available && !root.charging
         && root.percentage <= 0.15

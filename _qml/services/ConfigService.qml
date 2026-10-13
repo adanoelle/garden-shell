@@ -30,6 +30,23 @@ Singleton {
     /// Map of channel name → { modes: string[] }
     property var channels: ({})
 
+    /// Display aliases for app ids, e.g. { "zen-twilight": "zen" }.
+    property var apps: ({})
+
+    /// Human label for a window: `apps` alias, else the desktop entry's
+    /// name, else the last app-id segment, else the title's first word.
+    /// Lowercase, matching Garden's typographic voice.
+    function appLabel(appId: string, title: string): string {
+        const alias = root.apps[appId];
+        if (alias) return alias;
+        if (appId) {
+            const entry = DesktopEntries.heuristicLookup(appId);
+            if (entry?.name) return entry.name.toLowerCase();
+            return appId.split(".").pop().toLowerCase();
+        }
+        return (title || "").split(" ")[0] || "\u00b7";
+    }
+
     // ── Typography ──────────────────────────────────────────────────
     //
     // Shell-wide faces (not per palette), from settings.json's
@@ -82,6 +99,7 @@ Singleton {
         root.palette     = data.palette        || root.palette;
         root.barPosition = data.bar?.position   || root.barPosition;
         root.channels    = data.channels        || root.channels;
+        root.apps        = data.apps            || {};
         root.sansFont    = data.fonts?.sans     || root.defaultSansFont;
         root.monoFont    = data.fonts?.mono     || root.defaultMonoFont;
         root._syncTerminalFonts();

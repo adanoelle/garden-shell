@@ -3,6 +3,7 @@
   "bar": {
     "position": "top"
   },
+  "apps": {},
   "channels": {
     "studio": {
       "modes": ["minimal-bar"]

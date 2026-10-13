@@ -7,54 +7,61 @@ import Quickshell.Io
 
 /// Niri event stream consumer.
 ///
-/// Connects to `niri msg -j event-stream` and parses the initial state
-/// dump plus incremental events to keep CompositorService properties
-/// in sync with the running compositor.
+/// Mirrors niri's own workspace and window records (keyed by id) from
+/// `niri msg -j event-stream`, applying each event with niri's
+/// documented semantics, then derives the per-output shapes that
+/// CompositorService exposes. Derivation is coalesced: a burst of
+/// events (a workspace switch is several) produces one sync.
+///
+/// Semantics worth knowing (niri IPC docs):
+///   - `is_active` is per output (every output has one active
+///     workspace); `is_focused` is global. WorkspaceActivated only
+///     deactivates workspaces on the *same* output.
+///   - A focused WindowOpenedOrChanged unfocuses every other window.
+///   - The initial dump is WorkspacesChanged + WindowsChanged only — no
+///     WorkspaceActivated — so focus must be derived from the records.
+///   - `layout.pos_in_scrolling_layout` is [column, tile] (1-based) for
+///     tiled windows, null for floating ones.
 Singleton {
     id: root
-
-    // ── Internal state ──────────────────────────────────────────────
-
-    /// Workspace list: name → { name, active, windows: [id] }
-    property var _workspaces: ({})
-
-    /// Window list: id → { id, title, appId, workspaceName, isFocused }
-    property var _windows: ({})
-
-    /// Debounce timer for focus changes to prevent flicker.
-    property int _pendingFocusWorkspace: -1
 
     /// Whether niri's built-in overview (Super+A) is currently open.
     property bool overviewOpen: false
 
-    // ── Public API ──────────────────────────────────────────────────
+    // ── Raw niri records (plain JS; nothing binds to these) ─────────
+
+    property var _ws: ({})    // id → niri Workspace
+    property var _win: ({})   // id → niri Window
+
+    // ── Actions ─────────────────────────────────────────────────────
+    //
+    // Detached per call: a shared Process silently drops a command
+    // issued while the previous one is still running (fast clicks).
 
     function focusWorkspace(name: string) {
-        _niriMsg(["action", "focus-workspace", name]);
+        root._niriAction(["focus-workspace", name]);
+    }
+
+    /// Focus an (unnamed) workspace by its index on a given output.
+    function focusWorkspaceOn(output: string, idx: int) {
+        Quickshell.execDetached(["sh", "-c",
+            'niri msg action focus-monitor "$1" && niri msg action focus-workspace "$2"',
+            "garden-niri", output, String(idx)]);
+    }
+
+    function focusWindow(id: int) {
+        root._niriAction(["focus-window", "--id", String(id)]);
     }
 
     function runAction(action: string) {
-        _niriMsg(["action", action]);
+        root._niriAction([action]);
     }
 
-    /// Return all windows on the given workspace ID.
-    function windowsForWorkspace(wsId: int): var {
-        const result = [];
-        for (const id in root._windows) {
-            if (root._windows[id].workspaceId === wsId) {
-                result.push(root._windows[id]);
-            }
-        }
-        return result;
+    function _niriAction(args) {
+        Quickshell.execDetached(["niri", "msg", "action"].concat(args));
     }
 
-    /// Look up a workspace ID by name. Returns -1 if not found.
-    function workspaceId(name: string): int {
-        const ws = root._workspaces[name];
-        return ws ? ws.id : -1;
-    }
-
-    // ── Event stream process ────────────────────────────────────────
+    // ── Event stream ────────────────────────────────────────────────
 
     Process {
         id: eventStream
@@ -64,18 +71,25 @@ Singleton {
         stdout: SplitParser {
             onRead: message => root._handleEvent(message)
         }
-    }
 
-    // ── Debounce timer ──────────────────────────────────────────────
+        // The stream ends if niri restarts or the socket drops; respawn
+        // so the bar doesn't silently freeze. The fresh stream opens
+        // with a full WorkspacesChanged/WindowsChanged dump.
+        onExited: respawn.restart()
+    }
 
     Timer {
-        id: focusDebounce
-        interval: 80
-        repeat: false
-        onTriggered: root._applyFocusChange()
+        id: respawn
+        interval: 1000
+        onTriggered: eventStream.running = true
     }
 
-    // ── Event handling ──────────────────────────────────────────────
+    // Coalesce event bursts into one derivation pass.
+    Timer {
+        id: syncTimer
+        interval: 16
+        onTriggered: root._sync()
+    }
 
     function _handleEvent(line: string) {
         let event;
@@ -85,222 +99,187 @@ Singleton {
             return;
         }
 
-        // The event stream sends objects with a single key indicating the event type.
-        const keys = Object.keys(event);
-        if (keys.length === 0) return;
-        const type = keys[0];
+        // Each event is an object with a single key naming its type.
+        const type = Object.keys(event)[0];
+        if (!type) return;
         const data = event[type];
 
         switch (type) {
         case "WorkspacesChanged":
-            _handleWorkspacesChanged(data);
+            root._ws = root._byId(data.workspaces);
             break;
-        case "WorkspaceActivated":
-            _handleWorkspaceActivated(data);
+        case "WorkspaceActivated": {
+            const target = root._ws[data.id];
+            if (!target) return;
+            for (const id in root._ws) {
+                const w = root._ws[id];
+                if (w.output === target.output) w.is_active = w.id === data.id;
+                if (data.focused) w.is_focused = w.id === data.id;
+            }
             break;
+        }
+        case "WorkspaceActiveWindowChanged": {
+            const w = root._ws[data.workspace_id];
+            if (w) w.active_window_id = data.active_window_id;
+            break;
+        }
+        case "WorkspaceUrgencyChanged": {
+            const w = root._ws[data.id];
+            if (w) w.is_urgent = data.urgent;
+            break;
+        }
         case "WindowsChanged":
-            _handleWindowsChanged(data);
+            root._win = root._byId(data.windows);
             break;
-        case "WindowOpenedOrChanged":
-            _handleWindowOpenedOrChanged(data);
+        case "WindowOpenedOrChanged": {
+            const w = data.window;
+            if (!w) return;
+            if (w.is_focused)
+                for (const id in root._win) root._win[id].is_focused = false;
+            root._win[w.id] = w;
             break;
+        }
         case "WindowClosed":
-            _handleWindowClosed(data);
+            delete root._win[data.id];
             break;
         case "WindowFocusChanged":
-            _handleWindowFocusChanged(data);
+            for (const id in root._win)
+                root._win[id].is_focused = root._win[id].id === data.id;
+            break;
+        case "WindowUrgencyChanged": {
+            const w = root._win[data.id];
+            if (w) w.is_urgent = data.urgent;
+            break;
+        }
+        case "WindowLayoutsChanged":
+            for (const [id, layout] of data.changes ?? []) {
+                if (root._win[id]) root._win[id].layout = layout;
+            }
             break;
         case "OverviewOpenedOrClosed":
             root.overviewOpen = !!data.is_open;
-            break;
+            return;
+        default:
+            return;
+        }
+
+        syncTimer.restart();
+    }
+
+    function _byId(list) {
+        const map = {};
+        for (const item of list ?? []) map[item.id] = item;
+        return map;
+    }
+
+    // ── Derivation → CompositorService ──────────────────────────────
+
+    function _sync() {
+        const winsByWs = {};
+        for (const id in root._win) {
+            const w = root._win[id];
+            if (w.workspace_id === null || w.workspace_id === undefined) continue;
+            if (!winsByWs[w.workspace_id]) winsByWs[w.workspace_id] = [];
+            winsByWs[w.workspace_id].push(w);
+        }
+
+        const list = [];
+        for (const id in root._ws) {
+            const ws = root._ws[id];
+            list.push(root._workspaceEntry(ws, winsByWs[ws.id] ?? []));
+        }
+        list.sort((a, b) => a.output.localeCompare(b.output) || a.idx - b.idx);
+
+        const outputs = {};
+        let focused = null;
+        for (const ws of list) {
+            if (!outputs[ws.output]) outputs[ws.output] = {
+                name: ws.output, focused: false, active: null, workspaces: []
+            };
+            const out = outputs[ws.output];
+            out.workspaces.push(ws);
+            if (ws.active) out.active = ws;
+            if (ws.focused) { out.focused = true; focused = ws; }
+        }
+
+        CompositorService.workspaces = list;
+        CompositorService.outputs = outputs;
+        CompositorService.focusedOutput = focused ? focused.output : "";
+
+        const name = focused ? focused.label : "";
+        if (CompositorService.activeWorkspace !== name) {
+            CompositorService.activeWorkspace = name;
+            CompositorService.workspaceChanged(name);
         }
     }
 
-    function _handleWorkspacesChanged(data) {
-        const ws = {};
-        if (Array.isArray(data.workspaces)) {
-            for (const w of data.workspaces) {
-                const name = w.name || `unnamed-${w.id}`;
-                ws[name] = {
+    function _workspaceEntry(ws, wins) {
+        const columns = {};
+        const floating = [];
+
+        for (const w of wins) {
+            const pos = w.layout?.pos_in_scrolling_layout;
+            if (w.is_floating || !pos) {
+                floating.push({
                     id: w.id,
-                    name: name,
-                    idx: w.idx || 0,
-                    active: w.is_active || false,
-                    output: w.output || "",
-                    windows: []
-                };
-                if (w.is_active) {
-                    root._pendingFocusWorkspace = w.id;
-                }
-            }
-        }
-        root._workspaces = ws;
-        _syncWorkspaces();
-    }
-
-    function _handleWorkspaceActivated(data) {
-        const id = data.id;
-        const focused = data.focused;
-
-        // Shallow-copy to ensure QML detects the property change.
-        const ws = root._workspaces;
-        const updated = {};
-        for (const name in ws) {
-            updated[name] = Object.assign({}, ws[name], { active: ws[name].id === id });
-        }
-        root._workspaces = updated;
-
-        if (focused) {
-            root._pendingFocusWorkspace = id;
-            focusDebounce.restart();
-        }
-    }
-
-    function _handleWindowsChanged(data) {
-        const wins = {};
-        if (Array.isArray(data.windows)) {
-            for (const w of data.windows) {
-                wins[w.id] = {
-                    id: w.id,
-                    title: w.title || "",
-                    appId: w.app_id || "",
-                    workspaceId: w.workspace_id,
-                    isFocused: w.is_focused || false,
-                    isVisible: true
-                };
-            }
-        }
-        root._windows = wins;
-        _syncColumns();
-        _syncWorkspaces();
-    }
-
-    function _handleWindowOpenedOrChanged(data) {
-        const w = data.window || data;
-        // Shallow-copy to ensure QML detects the property change.
-        const wins = Object.assign({}, root._windows);
-        wins[w.id] = {
-            id: w.id,
-            title: w.title || "",
-            appId: w.app_id || "",
-            workspaceId: w.workspace_id,
-            isFocused: w.is_focused || false,
-            isVisible: true
-        };
-        root._windows = wins;
-        _syncColumns();
-        _syncWorkspaces();
-    }
-
-    function _handleWindowClosed(data) {
-        const id = data.id;
-        // Shallow-copy to ensure QML detects the property change.
-        const wins = Object.assign({}, root._windows);
-        delete wins[id];
-        root._windows = wins;
-        _syncColumns();
-        _syncWorkspaces();
-    }
-
-    function _handleWindowFocusChanged(data) {
-        const focusedId = data.id; // null if no window focused
-        // Shallow-copy to ensure QML detects the property change.
-        const wins = {};
-        for (const id in root._windows) {
-            wins[id] = Object.assign({}, root._windows[id], {
-                isFocused: parseInt(id, 10) === focusedId
-            });
-        }
-        root._windows = wins;
-        _syncColumns();
-    }
-
-    // ── Sync to CompositorService ───────────────────────────────────
-
-    function _applyFocusChange() {
-        const ws = root._workspaces;
-        for (const name in ws) {
-            if (ws[name].id === root._pendingFocusWorkspace) {
-                if (CompositorService.activeWorkspace !== name) {
-                    CompositorService.activeWorkspace = name;
-                    CompositorService.workspaceChanged(name);
-                }
-                break;
-            }
-        }
-        _syncColumns();
-        _syncWorkspaces();
-    }
-
-    function _syncColumns() {
-        // Find the active workspace ID.
-        let activeWsId = -1;
-        const ws = root._workspaces;
-        for (const name in ws) {
-            if (ws[name].active) {
-                activeWsId = ws[name].id;
-                break;
-            }
-        }
-
-        // Collect windows on the active workspace as "columns".
-        // Niri's scrollable layout means each top-level window is a column.
-        const cols = [];
-        const wins = root._windows;
-        for (const id in wins) {
-            const w = wins[id];
-            if (w.workspaceId === activeWsId) {
-                cols.push({
-                    id: w.id,
-                    title: w.title,
-                    appId: w.appId,
-                    focused: w.isFocused,
-                    visible: w.isVisible
+                    appId: w.app_id ?? "",
+                    title: w.title ?? "",
+                    focused: !!w.is_focused
                 });
+                continue;
             }
+            if (!columns[pos[0]]) columns[pos[0]] = [];
+            columns[pos[0]].push(w);
         }
 
-        CompositorService.columns = cols;
-    }
-
-    function _syncWorkspaces() {
-        const result = [];
-        const ws = root._workspaces;
-        const wins = root._windows;
-
-        // Follow niri's own order (output, then index on that output):
-        // object keys keep insertion order, and niri reports workspaces
-        // in creation order, which drifts as outputs come and go.
-        const names = Object.keys(ws).sort((a, b) =>
-            ws[a].output.localeCompare(ws[b].output) || ws[a].idx - ws[b].idx);
-
-        for (const name of names) {
-            let columnCount = 0;
-            for (const id in wins) {
-                if (wins[id].workspaceId === ws[name].id) {
-                    columnCount++;
-                }
+        const cols = [];
+        for (const index in columns) {
+            const tiles = columns[index];
+            // Label the column by its visible tile: the focused one, else
+            // the workspace's active window, else the most recently focused.
+            const rep = tiles.find(t => t.is_focused)
+                ?? tiles.find(t => t.id === ws.active_window_id)
+                ?? tiles.reduce((a, b) =>
+                    root._focusTime(b) > root._focusTime(a) ? b : a);
+            let x = null;
+            let width = 0;
+            for (const t of tiles) {
+                const p = t.layout?.tile_pos_in_workspace_view;
+                if (p) x = x === null ? p[0] : Math.min(x, p[0]);
+                width = Math.max(width, t.layout?.tile_size?.[0] ?? 0);
             }
-            result.push({
-                name: name,
-                columnCount: columnCount,
-                active: ws[name].active
+            cols.push({
+                index: parseInt(index, 10),
+                id: rep.id,
+                appId: rep.app_id ?? "",
+                title: rep.title ?? "",
+                tiles: tiles.length,
+                focused: tiles.some(t => t.is_focused),
+                active: tiles.some(t => t.id === ws.active_window_id),
+                x: x,
+                w: width
             });
         }
+        cols.sort((a, b) => a.index - b.index);
 
-        CompositorService.workspaces = result;
+        return {
+            id: ws.id,
+            idx: ws.idx ?? 0,
+            name: ws.name ?? "",
+            label: ws.name || String(ws.idx ?? ""),
+            output: ws.output ?? "",
+            active: !!ws.is_active,
+            focused: !!ws.is_focused,
+            urgent: !!ws.is_urgent
+                || wins.some(w => w.is_urgent),
+            windowCount: wins.length,
+            columns: cols,
+            floating: floating
+        };
     }
 
-    // ── Helper ──────────────────────────────────────────────────────
-
-    /// Reusable process for fire-and-forget niri commands.
-    Process {
-        id: actionProcess
-        running: false
-    }
-
-    function _niriMsg(args: list<string>) {
-        actionProcess.command = ["niri", "msg", "-j"].concat(args);
-        actionProcess.running = true;
+    function _focusTime(w) {
+        const t = w.focus_timestamp;
+        return t ? t.secs * 1e9 + t.nanos : 0;
     }
 }

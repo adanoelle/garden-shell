@@ -214,6 +214,21 @@ Use these shared components instead of inline implementations:
 | Result / list row | `ResultItem` | `_qml/components/ResultItem.qml` |
 | Action button | `GButton` | `_qml/components/GButton.qml` |
 | Keyboard hint footer | `HintLabel` | `_qml/components/HintLabel.qml` |
+| Bar text slot (hover, hit target, tooltip) | `BarSlot` | `_qml/bar/BarSlot.qml` |
+
+**Design tokens** live in `Theme.qml` — use them instead of literals:
+`fontCaption/Meta/Body/Title/Large/Heading` (10–16 px), `space1–4`
+(4 px grid), `motionQuick/Fast/Base` (120/150/200 ms). Containers have
+square corners (no `radius`); only status dots are round. Sans
+(`Theme.sansFont`) for human-facing text — names, actions, labels; mono
+for data and metadata — numbers, times, keys, ids, statuses. In sans
+strings use `\u2022` as the separator: M PLUS 1 gives `·` zero width.
+
+**Compositor state is per output.** `CompositorService.outputs[name]`
+holds each output's workspaces (in index order) and its `active`
+workspace; columns are in strip order with stacked tiles grouped. Bars
+look up their own output (`outputState(screen.name)`) and their own
+channel's bar mode (`ModeService.barModeFor`).
 
 Import components with `import "../components"` from overlay files.
 

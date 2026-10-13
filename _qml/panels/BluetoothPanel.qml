@@ -38,7 +38,15 @@ PanelWindow {
 
     Connections {
         target: HookService
-        function onBluetoothPanelToggled() { panel.visible = !panel.visible; }
+        function onBluetoothPanelToggled(screen) { panel._toggle(screen); }
+        function onTrayToggled() { panel.visible = false; }  // one panel at a time
+        function onNetworkPanelToggled() { panel.visible = false; }  // one panel at a time
+    }
+
+    /// Open on the clicked bar's screen (null = compositor's choice).
+    function _toggle(screen) {
+        if (!panel.visible) panel.screen = screen;
+        panel.visible = !panel.visible;
     }
 
     // ── Shared row ───────────────────────────────────────────────────
@@ -65,8 +73,8 @@ PanelWindow {
             anchors.rightMargin: 8
             text: row.name
             elide: Text.ElideRight
-            font.family: Theme.monoFont
-            font.pixelSize: 12
+            font.family: Theme.sansFont
+            font.pixelSize: Theme.fontBody
             color: row.connected ? Theme.text1 : Theme.text3
         }
 
@@ -80,7 +88,7 @@ PanelWindow {
                   : row.showError ? BluetoothService.errorText
                   : row.connected ? "connected" : "\u2014"
             font.family: Theme.monoFont
-            font.pixelSize: 11
+            font.pixelSize: Theme.fontMeta
             color: row.busy ? Theme.text2
                    : row.showError ? Theme.urgent
                    : row.connected ? Theme.ok : Theme.text4
@@ -107,8 +115,8 @@ PanelWindow {
         anchors.bottom: ConfigService.barPosition === "bottom"
                             ? parent.bottom : undefined
         anchors.right: parent.right
-        anchors.topMargin: ModeService.currentHeight + 4
-        anchors.bottomMargin: ModeService.currentHeight + 4
+        anchors.topMargin: ModeService.panelOffset
+        anchors.bottomMargin: ModeService.panelOffset
         anchors.rightMargin: 12
 
         width: panel.contentWidth + 32
@@ -137,15 +145,15 @@ PanelWindow {
                               ? BluetoothService.connectedDevices
                                     .map(d => d.name).join(", ")
                               : "no devices"
-                    font.family: Theme.monoFont
-                    font.pixelSize: 12
+                    font.family: Theme.sansFont
+                    font.pixelSize: Theme.fontBody
                     color: Theme.text1
                 }
 
                 Text {
                     text: BluetoothService.powered ? "power off" : "power on"
-                    font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.family: Theme.sansFont
+                    font.pixelSize: Theme.fontMeta
                     color: Theme.text3
 
                     MouseArea {
@@ -165,7 +173,7 @@ PanelWindow {
                 Text {
                     text: "paired"
                     font.family: Theme.monoFont
-                    font.pixelSize: 10
+                    font.pixelSize: Theme.fontCaption
                     color: Theme.text4
                 }
 
@@ -196,7 +204,7 @@ PanelWindow {
                 Text {
                     text: "nearby"
                     font.family: Theme.monoFont
-                    font.pixelSize: 10
+                    font.pixelSize: Theme.fontCaption
                     color: Theme.text4
                 }
 
@@ -216,7 +224,7 @@ PanelWindow {
                     visible: BluetoothService.scanning
                     text: "scanning\u2026"
                     font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.pixelSize: Theme.fontMeta
                     color: Theme.text4
                 }
 
@@ -225,14 +233,14 @@ PanelWindow {
                                  && !BluetoothService.scanning
                     text: "no devices found"
                     font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.pixelSize: Theme.fontMeta
                     color: Theme.text4
                 }
 
                 Text {
                     text: BluetoothService.scanning ? "stop" : "scan"
-                    font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.family: Theme.sansFont
+                    font.pixelSize: Theme.fontMeta
                     color: Theme.text3
 
                     MouseArea {
