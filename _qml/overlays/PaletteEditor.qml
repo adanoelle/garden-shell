@@ -63,18 +63,33 @@ Item {
 
     // ── Sync from Theme (single FileView lives in Theme, not here) ──
 
+    /// True while the editor is on screen (Settings binds its open
+    /// state). Only a live editor may push previews into Theme.
+    property bool live: false
+
     /// Sync when Theme loads or reloads palettes.json.
+    ///
+    /// Closed editor: follow the active palette. Theme has already
+    /// applied it; re-pushing a stale selection here would undo palette
+    /// switches made elsewhere (launcher, IPC, `garden-themes apply`).
+    /// Open editor: keep the user's selection and any unsaved edits,
+    /// and re-push the preview Theme's reload just overwrote.
     Connections {
         target: Theme
         function onAllPaletteDataChanged() {
             root._palettesData = Theme.allPaletteData;
-            // Select the active palette if we don't have one yet.
-            if (!root._editingPalette || !root._palettesData.palettes?.[root._editingPalette]) {
+            const exists = !!root._palettesData.palettes?.[root._editingPalette];
+            if (!root.live || !exists) {
                 root._editingPalette = root._palettesData.active || Theme.activePalette;
+                root._loadWorkingColors();
+            } else if (root._dirty) {
+                root._pushToTheme();
+            } else {
+                root._loadWorkingColors();
             }
-            root._loadWorkingColors();
         }
     }
+
 
     function _loadWorkingColors() {
         const palette = root._palettesData.palettes?.[root._editingPalette];
@@ -82,7 +97,7 @@ Item {
         // Deep copy so we don't mutate the cache.
         root._workingColors = JSON.parse(JSON.stringify(palette.colors));
         root._dirty = false;
-        root._pushToTheme();
+        if (root.live) root._pushToTheme();
     }
 
     // ── Select a different palette ──────────────────────────────────
