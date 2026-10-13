@@ -1,67 +1,45 @@
 import QtQuick
+import Quickshell
 import ".."
-import "../services"
 
 /// Time display in the bar.
 ///
-/// Full mode: time + date. Standard mode: time only. Minimal mode:
-/// hidden (parent handles visibility).
-Item {
+/// Full mode: date + time. Otherwise time only. SystemClock re-reads
+/// wall time on its own, so the display is right after suspend/resume
+/// and NTP steps (a minute-aligned Timer drifts across suspend).
+Row {
     id: root
 
-    implicitWidth: clockRow.implicitWidth
-    implicitHeight: parent ? parent.height : ModeService.standardHeight
+    /// Full-bar mode: show the date.
+    property bool showDate: false
 
-    // Update once per minute, synced to the minute boundary.
-    Timer {
-        id: clockTimer
-        running: true
-        repeat: false
-        triggeredOnStart: true
-        onTriggered: {
-            root._updateTime();
-            // Reschedule at the next minute boundary.
-            clockTimer.interval = 60000 - (Date.now() % 60000);
-            clockTimer.restart();
-        }
+    /// The owning bar's BarTooltip.
+    property var tip: null
+
+    readonly property var _days: ["sunday", "monday", "tuesday", "wednesday",
+                                  "thursday", "friday", "saturday"]
+    readonly property var _months: ["january", "february", "march", "april",
+                                    "may", "june", "july", "august",
+                                    "september", "october", "november", "december"]
+
+    SystemClock {
+        id: clock
+        precision: SystemClock.Minutes
     }
 
-    property string _timeStr: ""
-    property string _dateStr: ""
-
-    function _updateTime() {
-        const now = new Date();
-        const h = String(now.getHours()).padStart(2, "0");
-        const m = String(now.getMinutes()).padStart(2, "0");
-        root._timeStr = h + ":" + m;
-
-        const months = ["Jan","Feb","Mar","Apr","May","Jun",
-                        "Jul","Aug","Sep","Oct","Nov","Dec"];
-        const day = now.getDate();
-        const mon = months[now.getMonth()];
-        root._dateStr = mon + " " + day;
+    BarSlot {
+        visible: root.showDate
+        text: root._months[clock.date.getMonth()].slice(0, 3) + " " + clock.date.getDate()
+        color: Theme.text3
     }
 
-    Row {
-        id: clockRow
-        anchors.verticalCenter: parent.verticalCenter
-        spacing: 8
-
-        // Date (full mode only).
-        Text {
-            text: root._dateStr
-            color: Theme.text3
-            font.family: Theme.monoFont
-            font.pixelSize: 11
-            visible: ModeService.showExtended
-        }
-
-        // Time (always visible when bar has content).
-        Text {
-            text: root._timeStr
-            color: Theme.text1
-            font.family: Theme.monoFont
-            font.pixelSize: 13
-        }
+    BarSlot {
+        text: String(clock.hours).padStart(2, "0") + ":"
+            + String(clock.minutes).padStart(2, "0")
+        fontSize: Theme.fontTitle
+        color: Theme.text1
+        tip: root.tip
+        tooltip: root._days[clock.date.getDay()] + " \u2022 "
+            + root._months[clock.date.getMonth()] + " " + clock.date.getDate()
     }
 }

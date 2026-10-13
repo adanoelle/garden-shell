@@ -1,62 +1,85 @@
 import QtQuick
 import ".."
 import "../compositor"
-import "../services"
 
-/// Inactive channel dot indicator.
+/// Channel dot for one workspace on the bar's output.
 ///
-/// Shows a small dot for each workspace that is not currently active.
-/// Occupied workspaces (with windows) are brighter. Hovering expands
-/// to show the workspace name. Clicking switches to that workspace.
+/// Every workspace on the output gets a dot, in the output's own order,
+/// so positions are stable as focus moves (the active channel's name
+/// and pages follow the strip in BarChannel). Click focuses; hover
+/// shows the name after the tooltip delay.
+///
+///   visible workspace — filled text-1 (text-2 on an unfocused output)
+///   occupied          — filled text-3
+///   empty             — filled border-sub
+///   unnamed + empty   — hollow ring (niri's trailing "new" workspace),
+///                       ring brightened when visible
+///   urgent            — urgent, overriding the above
 Item {
     id: root
 
-    /// Workspace data: { name, columnCount, active }
+    /// Workspace entry from CompositorService.
     required property var workspace
 
-    // Hide the active workspace (BarChannel shows it instead).
-    visible: !workspace.active
+    /// Whether the bar's output holds keyboard focus.
+    property bool outputFocused: false
 
-    implicitWidth: hovered ? expandedRow.implicitWidth + 12 : 8
-    implicitHeight: parent ? parent.height : ModeService.standardHeight
+    /// The owning bar's BarTooltip.
+    property var tip: null
 
-    property bool hovered: mouseArea.containsMouse
+    readonly property bool _hollow: !root.workspace.name && root.workspace.windowCount === 0
 
-    Behavior on implicitWidth {
-        NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
-    }
+    implicitWidth: 13
+    implicitHeight: parent ? parent.height : 30
 
-    MouseArea {
-        id: mouseArea
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        onClicked: CompositorService.focusWorkspace(root.workspace.name)
-    }
-
-    // Dot (default state).
     Rectangle {
-        id: dot
         anchors.centerIn: parent
         width: 5
         height: 5
         radius: 2.5
-        color: root.workspace.columnCount > 0 ? Theme.text3 : Theme.borderSub
-        visible: !root.hovered
+        color: root._hollow ? "transparent" : root._color()
+        border.width: root._hollow ? 1 : 0
+        border.color: area.containsMouse ? Theme.text1
+            : root.workspace.active ? (root.outputFocused ? Theme.text1 : Theme.text2)
+            : Theme.borderSub
     }
 
-    // Expanded name (hover state).
-    Row {
-        id: expandedRow
-        anchors.centerIn: parent
-        spacing: 4
-        visible: root.hovered
+    function _color(): color {
+        const ws = root.workspace;
+        if (ws.urgent) return Theme.urgent;
+        if (area.containsMouse) return Theme.text1;
+        if (ws.active) return root.outputFocused ? Theme.text1 : Theme.text2;
+        if (ws.windowCount > 0) return Theme.text3;
+        return Theme.borderSub;
+    }
 
-        Text {
-            text: root.workspace.name
-            color: Theme.text2
-            font.family: Theme.sansFont
-            font.pixelSize: 11
+    MouseArea {
+        id: area
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onClicked: CompositorService.focusWorkspaceEntry(root.workspace)
+        onContainsMouseChanged: {
+            if (containsMouse) tipDelay.restart();
+            else {
+                tipDelay.stop();
+                if (root.tip) root.tip.hide(root);
+            }
+        }
+    }
+
+    Timer {
+        id: tipDelay
+        interval: 400
+        onTriggered: {
+            if (!root.tip) return;
+            const ws = root.workspace;
+            const n = ws.windowCount;
+            const name = ws.name
+                || (n > 0 ? "workspace " + ws.idx : "new workspace");
+            root.tip.show(root, n > 0
+                ? name + " \u2022 " + n + (n === 1 ? " window" : " windows")
+                : name);
         }
     }
 }

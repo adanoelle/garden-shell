@@ -48,7 +48,15 @@ PanelWindow {
 
     Connections {
         target: HookService
-        function onNetworkPanelToggled() { panel.visible = !panel.visible; }
+        function onNetworkPanelToggled(screen) { panel._toggle(screen); }
+        function onTrayToggled() { panel.visible = false; }  // one panel at a time
+        function onBluetoothPanelToggled() { panel.visible = false; }  // one panel at a time
+    }
+
+    /// Open on the clicked bar's screen (null = compositor's choice).
+    function _toggle(screen) {
+        if (!panel.visible) panel.screen = screen;
+        panel.visible = !panel.visible;
     }
 
     // ── Behavior helpers ─────────────────────────────────────────────
@@ -109,8 +117,8 @@ PanelWindow {
             anchors.rightMargin: 8
             text: row.name
             elide: Text.ElideRight
-            font.family: Theme.monoFont
-            font.pixelSize: 12
+            font.family: Theme.sansFont
+            font.pixelSize: Theme.fontBody
             color: row.active ? Theme.text1 : Theme.text3
         }
 
@@ -125,7 +133,7 @@ PanelWindow {
                   : row.confirming ? "confirm down?"
                   : row.active ? "up" : "\u2014"
             font.family: Theme.monoFont
-            font.pixelSize: 11
+            font.pixelSize: Theme.fontMeta
             color: row.busy ? Theme.text2
                    : (row.showError || row.confirming) ? Theme.urgent
                    : row.active ? Theme.ok : Theme.text4
@@ -153,8 +161,8 @@ PanelWindow {
         anchors.bottom: ConfigService.barPosition === "bottom"
                             ? parent.bottom : undefined
         anchors.right: parent.right
-        anchors.topMargin: ModeService.currentHeight + 4
-        anchors.bottomMargin: ModeService.currentHeight + 4
+        anchors.topMargin: ModeService.panelOffset
+        anchors.bottomMargin: ModeService.panelOffset
         anchors.rightMargin: 12
 
         width: panel.contentWidth + 32
@@ -181,11 +189,11 @@ PanelWindow {
 
                 Text {
                     text: NetworkService.connectionType === "wifi"
-                              ? NetworkService.ssid + " \u00b7 wifi"
+                              ? NetworkService.ssid + " \u2022 wifi"
                               : NetworkService.connectionType === "wired"
                                   ? "eth" : "offline"
-                    font.family: Theme.monoFont
-                    font.pixelSize: 12
+                    font.family: Theme.sansFont
+                    font.pixelSize: Theme.fontBody
                     color: Theme.text1
                 }
 
@@ -193,7 +201,7 @@ PanelWindow {
                     visible: NetworkService.vpnActive
                     text: "vpn active"
                     font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.pixelSize: Theme.fontMeta
                     color: Theme.accent
                 }
             }
@@ -205,7 +213,7 @@ PanelWindow {
                 Text {
                     text: "connections"
                     font.family: Theme.monoFont
-                    font.pixelSize: 10
+                    font.pixelSize: Theme.fontCaption
                     color: Theme.text4
                 }
 
@@ -233,7 +241,7 @@ PanelWindow {
                 Text {
                     text: "wifi"
                     font.family: Theme.monoFont
-                    font.pixelSize: 10
+                    font.pixelSize: Theme.fontCaption
                     color: Theme.text4
                 }
 
@@ -261,7 +269,7 @@ PanelWindow {
                             width: 34
                             text: panel._bars(wifiRow.modelData.signal)
                             font.family: Theme.monoFont
-                            font.pixelSize: 11
+                            font.pixelSize: Theme.fontMeta
                             color: Theme.text3
                         }
 
@@ -273,8 +281,8 @@ PanelWindow {
                             text: wifiRow.modelData.ssid
                                   + (wifiRow.modelData.secured ? " *" : "")
                             elide: Text.ElideRight
-                            font.family: Theme.monoFont
-                            font.pixelSize: 12
+                            font.family: Theme.sansFont
+                            font.pixelSize: Theme.fontBody
                             color: wifiRow.modelData.inUse ? Theme.text1
                                    : wifiRow.modelData.known ? Theme.text2
                                    : Theme.text4
@@ -286,7 +294,7 @@ PanelWindow {
                             text: wifiRow.busy ? "\u2026"
                                   : wifiRow.confirming ? "confirm down?" : ""
                             font.family: Theme.monoFont
-                            font.pixelSize: 11
+                            font.pixelSize: Theme.fontMeta
                             color: wifiRow.confirming
                                        ? Theme.urgent : Theme.text2
                         }
@@ -319,7 +327,7 @@ PanelWindow {
                     visible: NetworkService.scanning
                     text: "scanning\u2026"
                     font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.pixelSize: Theme.fontMeta
                     color: Theme.text4
                 }
 
@@ -328,14 +336,14 @@ PanelWindow {
                                  && !NetworkService.scanning
                     text: "no networks"
                     font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.pixelSize: Theme.fontMeta
                     color: Theme.text4
                 }
 
                 Text {
                     text: "rescan"
-                    font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.family: Theme.sansFont
+                    font.pixelSize: Theme.fontMeta
                     color: Theme.text3
 
                     MouseArea {
@@ -362,7 +370,7 @@ PanelWindow {
                 Text {
                     text: "vpn"
                     font.family: Theme.monoFont
-                    font.pixelSize: 10
+                    font.pixelSize: Theme.fontCaption
                     color: Theme.text4
                 }
 
@@ -389,9 +397,9 @@ PanelWindow {
                 // flow, which a pointer-only panel can't host.
                 Text {
                     visible: NetworkService._tailscale
-                    text: "tailscale \u00b7 up"
-                    font.family: Theme.monoFont
-                    font.pixelSize: 12
+                    text: "tailscale \u2022 up"
+                    font.family: Theme.sansFont
+                    font.pixelSize: Theme.fontBody
                     color: Theme.text2
                 }
             }
