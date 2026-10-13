@@ -33,6 +33,13 @@ OverlayBase {
         keyHandler.forceActiveFocus();
     }
 
+    function _onEscape() {
+        if (paletteEditor.dropdownOpen)
+            paletteEditor.closeDropdown();
+        else
+            settings._close();
+    }
+
     function _onBeforeClose() {
         // Auto-discard unsaved palette edits.
         paletteEditor._discardEdits();
@@ -45,12 +52,7 @@ OverlayBase {
         anchors.fill: parent
         focus: true
 
-        Keys.onEscapePressed: {
-            if (paletteEditor.dropdownOpen)
-                paletteEditor.closeDropdown();
-            else
-                settings._close();
-        }
+        Keys.onEscapePressed: settings._onEscape()
     }
 
     // ── Content ─────────────────────────────────────────────────────
@@ -64,6 +66,10 @@ OverlayBase {
         opacity: 0
 
         transform: Translate { id: contentSlide; y: 20 }
+
+        // Esc from a focused hex input propagates up the item tree, which
+        // keyHandler (a sibling) is not part of — catch it here too.
+        Keys.onEscapePressed: settings._onEscape()
 
         // Main panel.
         Rectangle {
