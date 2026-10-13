@@ -19,6 +19,7 @@
 //! | [`Yazi`]    | `yazi/garden-theme.toml`    | TOML theme            |
 //! | [`Zathura`] | `zathura/gardenrc`          | zathurarc set cmds    |
 //! | [`Niri`]    | `niri/garden-colors.kdl`    | KDL include fragment  |
+//! | [`Obsidian`]| `obsidian/garden-theme.css` | CSS snippet (dark)    |
 //!
 //! # Adding a new generator
 //!
@@ -49,6 +50,7 @@ pub mod kakoune;
 pub mod kitty;
 pub mod lazygit;
 pub mod niri;
+pub mod obsidian;
 pub mod yazi;
 pub mod zathura;
 
@@ -93,5 +95,6 @@ pub fn all() -> Vec<Box<dyn ThemeGenerator>> {
         Box::new(yazi::Yazi),
         Box::new(zathura::Zathura),
         Box::new(niri::Niri),
+        Box::new(obsidian::Obsidian),
     ]
 }

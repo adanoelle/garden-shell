@@ -810,6 +810,117 @@ fn niri_relative_path() {
     assert_eq!(niri.relative_path(), "niri/garden-colors.kdl");
 }
 
+// ── Obsidian ─────────────────────────────────────────────────────────
+
+#[test]
+fn obsidian_output_contains_header() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let obsidian = generators::obsidian::Obsidian;
+    let output = obsidian.generate(palette);
+
+    assert!(output.contains("Garden theme"));
+    assert!(output.contains(&col.active));
+    assert!(output.contains("Do not edit by hand"));
+}
+
+#[test]
+fn obsidian_output_contains_palette_colors() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let obsidian = generators::obsidian::Obsidian;
+    let output = obsidian.generate(palette);
+
+    let base = palette.color(ColorRole::Base).unwrap().as_str();
+    let text1 = palette.color(ColorRole::Text1).unwrap().as_str();
+    let text2 = palette.color(ColorRole::Text2).unwrap().as_str();
+    let accent = palette.color(ColorRole::Accent).unwrap().as_str();
+    let urgent = palette.color(ColorRole::Urgent).unwrap().as_str();
+    let ok = palette.color(ColorRole::Ok).unwrap().as_str();
+
+    assert!(output.contains(&format!("--background-primary: {base}")));
+    assert!(output.contains(&format!("--text-normal: {text2}")));
+    assert!(output.contains(&format!("--text-on-accent: {text1}")));
+    assert!(output.contains(&format!("--color-accent: {accent}")));
+    assert!(output.contains(&format!("--text-error: {urgent}")));
+    assert!(output.contains(&format!("--text-success: {ok}")));
+}
+
+#[test]
+fn obsidian_output_is_css_structure() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let obsidian = generators::obsidian::Obsidian;
+    let output = obsidian.generate(palette);
+
+    assert!(
+        output.contains(".theme-dark {"),
+        "should contain .theme-dark selector"
+    );
+    assert!(
+        output.contains("--accent-h:"),
+        "should contain HSL hue component"
+    );
+    assert!(
+        output.contains("--accent-s:"),
+        "should contain HSL saturation component"
+    );
+    assert!(
+        output.contains("--accent-l:"),
+        "should contain HSL lightness component"
+    );
+    assert!(
+        output.contains("--default-font:"),
+        "should set default font"
+    );
+    assert!(
+        output.contains("--font-monospace:"),
+        "should set monospace font"
+    );
+}
+
+#[test]
+fn obsidian_output_has_expected_variables() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let obsidian = generators::obsidian::Obsidian;
+    let output = obsidian.generate(palette);
+
+    let expected_vars = [
+        "--background-primary:",
+        "--background-primary-alt:",
+        "--background-secondary:",
+        "--background-secondary-alt:",
+        "--background-modifier-hover:",
+        "--background-modifier-border:",
+        "--background-modifier-border-hover:",
+        "--background-modifier-border-focus:",
+        "--text-normal:",
+        "--text-muted:",
+        "--text-faint:",
+        "--text-on-accent:",
+        "--color-accent:",
+        "--interactive-accent:",
+        "--text-error:",
+        "--text-success:",
+        "--h1-color:",
+        "--h6-color:",
+    ];
+
+    for var in expected_vars {
+        assert!(
+            output.contains(var),
+            "missing Obsidian CSS variable: {var}"
+        );
+    }
+}
+
+#[test]
+fn obsidian_relative_path() {
+    let obsidian = generators::obsidian::Obsidian;
+    assert_eq!(obsidian.relative_path(), "obsidian/garden-theme.css");
+}
+
 // ── Registry ──────────────────────────────────────────────────────────
 
 #[test]
@@ -817,8 +928,8 @@ fn all_generators_registered() {
     let gens = generators::all();
     assert_eq!(
         gens.len(),
-        10,
-        "expected kitty + fish + kakoune + fzf + bat + lazygit + btop + yazi + zathura + niri"
+        11,
+        "expected kitty + fish + kakoune + fzf + bat + lazygit + btop + yazi + zathura + niri + obsidian"
     );
 
     let names: Vec<&str> = gens.iter().map(|g| g.name()).collect();
@@ -832,6 +943,7 @@ fn all_generators_registered() {
     assert!(names.contains(&"yazi"));
     assert!(names.contains(&"zathura"));
     assert!(names.contains(&"niri"));
+    assert!(names.contains(&"obsidian"));
 }
 
 #[test]
