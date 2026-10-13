@@ -41,8 +41,9 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         text: root.primary
         color: Theme.text1
-        font.family: Theme.monoFont
-        font.pixelSize: 12
+        font.family: Theme.sansFont
+        font.pixelSize: Theme.fontBody
+        font.weight: root.selected ? Font.DemiBold : Font.Normal
         elide: Text.ElideRight
     }
 
@@ -54,7 +55,7 @@ Item {
         text: root.secondary
         color: Theme.text3
         font.family: Theme.monoFont
-        font.pixelSize: 11
+        font.pixelSize: Theme.fontMeta
     }
 
     MouseArea {

@@ -53,15 +53,15 @@ Item {
                 text: root.palettesData.palettes?.[root.selectedPalette]?.icon || "\u25cf"
                 color: Theme.text1
                 font.family: Theme.monoFont
-                font.pixelSize: 12
+                font.pixelSize: Theme.fontBody
                 anchors.verticalCenter: parent.verticalCenter
             }
 
             Text {
                 text: root.selectedPalette || "---"
                 color: Theme.text1
-                font.family: Theme.monoFont
-                font.pixelSize: 12
+                font.family: Theme.sansFont
+                font.pixelSize: Theme.fontBody
                 font.weight: Font.DemiBold
                 anchors.verticalCenter: parent.verticalCenter
             }
@@ -70,7 +70,7 @@ Item {
                 text: dropdown.visible ? "\u25b4" : "\u25be"
                 color: Theme.text3
                 font.family: Theme.monoFont
-                font.pixelSize: 10
+                font.pixelSize: Theme.fontCaption
                 anchors.verticalCenter: parent.verticalCenter
             }
         }
@@ -159,7 +159,7 @@ Item {
                                 text: rowDelegate.modelData.name === root.selectedPalette ? "\u2713" : " "
                                 color: Theme.accent
                                 font.family: Theme.monoFont
-                                font.pixelSize: 12
+                                font.pixelSize: Theme.fontBody
                                 width: 14
                                 anchors.verticalCenter: parent.verticalCenter
                             }
@@ -169,7 +169,7 @@ Item {
                                 color: rowDelegate.modelData.name === root.selectedPalette
                                     ? Theme.text1 : Theme.text3
                                 font.family: Theme.monoFont
-                                font.pixelSize: 12
+                                font.pixelSize: Theme.fontBody
                                 anchors.verticalCenter: parent.verticalCenter
                             }
 
@@ -177,8 +177,8 @@ Item {
                                 text: rowDelegate.modelData.name
                                 color: rowDelegate.modelData.name === root.selectedPalette
                                     ? Theme.text1 : Theme.text2
-                                font.family: Theme.monoFont
-                                font.pixelSize: 12
+                                font.family: Theme.sansFont
+                                font.pixelSize: Theme.fontBody
                                 font.weight: rowDelegate.modelData.name === root.selectedPalette
                                     ? Font.DemiBold : Font.Normal
                                 anchors.verticalCenter: parent.verticalCenter
@@ -195,14 +195,13 @@ Item {
                             height: 28
                             visible: rowDelegate.modelData.builtin === false
                             color: deleteBtnHover.containsMouse ? Theme.urgent : "transparent"
-                            radius: 2
 
                             Text {
                                 anchors.centerIn: parent
                                 text: "\u00d7"
                                 color: deleteBtnHover.containsMouse ? Theme.baseDeep : Theme.text4
                                 font.family: Theme.monoFont
-                                font.pixelSize: 16
+                                font.pixelSize: Theme.fontHeading
                             }
 
                             MouseArea {

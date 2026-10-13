@@ -14,7 +14,7 @@ OverlayBase {
     id: center
 
     _namespace:    "garden-notification-center"
-    animDuration:  200
+    animDuration:  Theme.motionBase
     contentTarget: content
     slideTarget:   contentSlide
 
@@ -104,7 +104,7 @@ OverlayBase {
                         text: "notifications"
                         color: Theme.text1
                         font.family: Theme.sansFont
-                        font.pixelSize: 13
+                        font.pixelSize: Theme.fontTitle
                         font.bold: true
                     }
 
@@ -115,7 +115,7 @@ OverlayBase {
                         text: NotificationService.history.length + " this session"
                         color: Theme.text4
                         font.family: Theme.monoFont
-                        font.pixelSize: 10
+                        font.pixelSize: Theme.fontCaption
                     }
                 }
 
@@ -135,8 +135,8 @@ OverlayBase {
                         anchors.centerIn: parent
                         text: "no notifications"
                         color: Theme.text4
-                        font.family: Theme.monoFont
-                        font.pixelSize: 12
+                        font.family: Theme.sansFont
+                        font.pixelSize: Theme.fontBody
                     }
                 }
 
@@ -194,7 +194,7 @@ OverlayBase {
                                     text: entryRow.modelData.appName || "notification"
                                     color: Theme.text1
                                     font.family: Theme.sansFont
-                                    font.pixelSize: 12
+                                    font.pixelSize: Theme.fontBody
                                     font.bold: true
                                     elide: Text.ElideRight
                                 }
@@ -206,7 +206,7 @@ OverlayBase {
                                     text: entryRow.modelData.time
                                     color: Theme.text4
                                     font.family: Theme.monoFont
-                                    font.pixelSize: 10
+                                    font.pixelSize: Theme.fontCaption
                                 }
                             }
 
@@ -220,7 +220,7 @@ OverlayBase {
                                 }
                                 color: Theme.text2
                                 font.family: Theme.sansFont
-                                font.pixelSize: 12
+                                font.pixelSize: Theme.fontBody
                                 wrapMode: Text.Wrap
                                 maximumLineCount: 2
                                 elide: Text.ElideRight

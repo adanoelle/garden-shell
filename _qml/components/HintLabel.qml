@@ -12,7 +12,6 @@ Rectangle {
 
     width: _t.width + 16
     height: _t.height + 8
-    radius: 3
     color: Theme.base
     border.color: Theme.borderSub
     border.width: 1
@@ -23,6 +22,6 @@ Rectangle {
         text: root.text
         color: Theme.text3
         font.family: Theme.monoFont
-        font.pixelSize: 11
+        font.pixelSize: Theme.fontMeta
     }
 }

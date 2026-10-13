@@ -121,7 +121,7 @@ WlSessionLockSurface {
             text: surface._dateStr
             color: Theme.text2
             font.family: Theme.monoFont
-            font.pixelSize: 13
+            font.pixelSize: Theme.fontTitle
             font.letterSpacing: 3
         }
 
@@ -133,7 +133,7 @@ WlSessionLockSurface {
             text: "ada@nix"
             color: Theme.text3
             font.family: Theme.monoFont
-            font.pixelSize: 12
+            font.pixelSize: Theme.fontBody
         }
 
         Item { width: 1; height: 12 }
@@ -169,7 +169,7 @@ WlSessionLockSurface {
                 readOnly: surface.context.authenticating
                 color: Theme.text1
                 font.family: Theme.monoFont
-                font.pixelSize: 14
+                font.pixelSize: Theme.fontLarge
                 verticalAlignment: TextInput.AlignVCenter
                 clip: true
 
@@ -198,7 +198,7 @@ WlSessionLockSurface {
             text: surface.context.authenticating ? "checking\u2026" : "press enter"
             color: Theme.text4
             font.family: Theme.monoFont
-            font.pixelSize: 11
+            font.pixelSize: Theme.fontMeta
         }
     }
 
@@ -210,7 +210,7 @@ WlSessionLockSurface {
         text: "nixos \u00b7 niri \u00b7 garden shell"
         color: Theme.text4
         font.family: Theme.monoFont
-        font.pixelSize: 11
+        font.pixelSize: Theme.fontMeta
         font.letterSpacing: 2
     }
 

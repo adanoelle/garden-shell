@@ -43,7 +43,7 @@ Item {
                     text: "studio"
                     color: Theme.text1
                     font.family: Theme.sansFont
-                    font.pixelSize: 11
+                    font.pixelSize: Theme.fontMeta
                     font.bold: true
                 }
 
@@ -51,14 +51,14 @@ Item {
                     text: "\u00b7"
                     color: Theme.text4
                     font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.pixelSize: Theme.fontMeta
                 }
 
                 Text {
                     text: "kitty"
                     color: Theme.text2
                     font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.pixelSize: Theme.fontMeta
                 }
             }
 
@@ -69,7 +69,7 @@ Item {
                 text: "12:34"
                 color: Theme.text1
                 font.family: Theme.monoFont
-                font.pixelSize: 11
+                font.pixelSize: Theme.fontMeta
             }
         }
 
@@ -94,7 +94,7 @@ Item {
                     text: "~/src/garden-shell"
                     color: Theme.accent
                     font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.pixelSize: Theme.fontMeta
                 }
 
                 Row {
@@ -103,13 +103,13 @@ Item {
                         text: "$ "
                         color: Theme.text3
                         font.family: Theme.monoFont
-                        font.pixelSize: 11
+                        font.pixelSize: Theme.fontMeta
                     }
                     Text {
                         text: "cargo build"
                         color: Theme.text1
                         font.family: Theme.monoFont
-                        font.pixelSize: 11
+                        font.pixelSize: Theme.fontMeta
                     }
                 }
 
@@ -117,14 +117,14 @@ Item {
                     text: "   Compiling garden-core v0.1.0"
                     color: Theme.ok
                     font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.pixelSize: Theme.fontMeta
                 }
 
                 Text {
                     text: "warning: unused variable `x`"
                     color: Theme.urgent
                     font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.pixelSize: Theme.fontMeta
                 }
             }
         }
@@ -148,17 +148,17 @@ Item {
 
                 Row {
                     spacing: 0
-                    Text { text: "fn "; color: Theme.text3; font { family: Theme.monoFont; pixelSize: 11 } }
-                    Text { text: "apply"; color: Theme.accent; font { family: Theme.monoFont; pixelSize: 11 } }
-                    Text { text: "(name: &str) {"; color: Theme.text2; font { family: Theme.monoFont; pixelSize: 11 } }
+                    Text { text: "fn "; color: Theme.text3; font { family: Theme.monoFont; pixelSize: Theme.fontMeta } }
+                    Text { text: "apply"; color: Theme.accent; font { family: Theme.monoFont; pixelSize: Theme.fontMeta } }
+                    Text { text: "(name: &str) {"; color: Theme.text2; font { family: Theme.monoFont; pixelSize: Theme.fontMeta } }
                 }
                 Row {
                     spacing: 0
-                    Text { text: "    "; color: Theme.text4; font { family: Theme.monoFont; pixelSize: 11 } }
-                    Text { text: "println!"; color: Theme.text1; font { family: Theme.monoFont; pixelSize: 11 } }
-                    Text { text: "(\"switching\")"; color: Theme.ok; font { family: Theme.monoFont; pixelSize: 11 } }
+                    Text { text: "    "; color: Theme.text4; font { family: Theme.monoFont; pixelSize: Theme.fontMeta } }
+                    Text { text: "println!"; color: Theme.text1; font { family: Theme.monoFont; pixelSize: Theme.fontMeta } }
+                    Text { text: "(\"switching\")"; color: Theme.ok; font { family: Theme.monoFont; pixelSize: Theme.fontMeta } }
                 }
-                Text { text: "}"; color: Theme.text2; font { family: Theme.monoFont; pixelSize: 11 } }
+                Text { text: "}"; color: Theme.text2; font { family: Theme.monoFont; pixelSize: Theme.fontMeta } }
             }
         }
 
@@ -181,19 +181,19 @@ Item {
                     text: "\u25cf"
                     color: Theme.accent
                     font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.pixelSize: Theme.fontMeta
                 }
                 Text {
                     text: "palette applied"
                     color: Theme.text1
                     font.family: Theme.sansFont
-                    font.pixelSize: 11
+                    font.pixelSize: Theme.fontMeta
                 }
                 Text {
                     text: "just now"
                     color: Theme.text4
                     font.family: Theme.monoFont
-                    font.pixelSize: 11
+                    font.pixelSize: Theme.fontMeta
                 }
             }
         }

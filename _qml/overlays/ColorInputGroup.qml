@@ -28,7 +28,7 @@ Column {
         text: root.sectionLabel
         color: Theme.text2
         font.family: Theme.sansFont
-        font.pixelSize: 12
+        font.pixelSize: Theme.fontBody
         font.weight: Font.DemiBold
         bottomPadding: 4
     }

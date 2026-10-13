@@ -50,7 +50,7 @@ Item {
             text: root.colorKey
             color: Theme.text3
             font.family: Theme.monoFont
-            font.pixelSize: 11
+            font.pixelSize: Theme.fontMeta
             elide: Text.ElideRight
         }
 
@@ -72,7 +72,7 @@ Item {
                 selectionColor: Theme.baseHl
                 selectedTextColor: Theme.text1
                 font.family: Theme.monoFont
-                font.pixelSize: 12
+                font.pixelSize: Theme.fontBody
                 maximumLength: 7
                 clip: true
 

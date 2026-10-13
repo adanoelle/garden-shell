@@ -114,7 +114,6 @@ PanelWindow {
         anchors.horizontalCenter: parent.horizontalCenter
         width: root.osdWidth
         height: root.osdHeight
-        radius: 2
         color: Theme.baseRaised
         border.width: 1
         border.color: Theme.border
@@ -134,7 +133,7 @@ PanelWindow {
             }
             color: root._muted ? Theme.text4 : Theme.text2
             font.family: Theme.monoFont
-            font.pixelSize: 11
+            font.pixelSize: Theme.fontMeta
         }
 
         // Progress bar: 4 px tall, fills remaining width.
@@ -146,13 +145,11 @@ PanelWindow {
             anchors.rightMargin: 10
             anchors.verticalCenter: parent.verticalCenter
             height: 4
-            radius: 2
             color: Theme.borderSub
 
             Rectangle {
                 width: root._muted ? 0 : parent.width * root._value
                 height: parent.height
-                radius: 2
                 color: Theme.accent
 
                 Behavior on width {

@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import ".."
 
 /// Base component for full-screen modal overlays (Launcher, ChannelSwitcher, Settings…).
 ///
@@ -39,8 +40,9 @@ PanelWindow {
 
     // ── Configurable ─────────────────────────────────────────────────
 
-    /// Animation duration in ms. 150 for Launcher, 200 for others.
-    property int animDuration: 200
+    /// Animation duration in ms: Theme.motionFast for Launcher,
+    /// Theme.motionBase for the rest (spec timing hierarchy).
+    property int animDuration: Theme.motionBase
 
     /// WlrLayershell namespace. Override per overlay.
     property string _namespace: "garden-overlay"

@@ -14,7 +14,7 @@ OverlayBase {
     id: launcher
 
     _namespace:    "garden-launcher"
-    animDuration:  150
+    animDuration:  Theme.motionFast
     contentTarget: content
     slideTarget:   contentSlide
 
@@ -77,7 +77,7 @@ OverlayBase {
                         text: "/"
                         color: Theme.text4
                         font.family: Theme.monoFont
-                        font.pixelSize: 14
+                        font.pixelSize: Theme.fontLarge
                     }
 
                     TextInput {
@@ -91,7 +91,7 @@ OverlayBase {
                         selectionColor: Theme.baseHl
                         selectedTextColor: Theme.text1
                         font.family: Theme.monoFont
-                        font.pixelSize: 14
+                        font.pixelSize: Theme.fontLarge
                         clip: true
                         focus: true
 
@@ -182,8 +182,8 @@ OverlayBase {
             }
         }
 
-        // Channels.
-        const workspaces = CompositorService.workspaces;
+        // Channels (named workspaces only).
+        const workspaces = CompositorService.workspaces.filter(w => w.name);
         for (let i = 0; i < workspaces.length && results.length < cap; i++) {
             const ws = workspaces[i];
             if (q === "" || ws.name.toLowerCase().includes(q)) {
