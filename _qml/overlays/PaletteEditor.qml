@@ -388,6 +388,43 @@ Item {
             }
         }
 
+        // ── Typography (shell-wide, applies immediately) ────────────
+        //
+        // Not part of the palette: picking a face writes settings.json
+        // and re-styles the whole shell at once, independent of the
+        // save/apply buttons below.
+
+        Column {
+            width: parent.width
+            spacing: 12
+
+            Text {
+                text: "typography"
+                color: Theme.text2
+                font.family: Theme.sansFont
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+            }
+
+            FontPicker {
+                width: parent.width
+                sectionLabel: "interface"
+                role: "sans"
+                choices: ConfigService.sansFontChoices
+                current: Theme.sansFont
+                sample: "research · 3 columns · Thu Oct 13 14:20"
+            }
+
+            FontPicker {
+                width: parent.width
+                sectionLabel: "mono"
+                role: "mono"
+                choices: ConfigService.monoFontChoices
+                current: Theme.monoFont
+                sample: "~/src/fern main ✧ just check   0O 1lI {}[] => !="
+            }
+        }
+
         // ── Action buttons ──────────────────────────────────────────
 
         Row {

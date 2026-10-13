@@ -71,8 +71,10 @@ Singleton {
 
     // ── Fonts ───────────────────────────────────────────────────────
 
-    readonly property string sansFont: "M PLUS 1p"
-    readonly property string monoFont: "IBM Plex Mono"
+    /// Chosen in Settings → palette → typography; stored in
+    /// settings.json (ConfigService). Defaults: M PLUS 1, IBM Plex Mono.
+    readonly property string sansFont: ConfigService.sansFont
+    readonly property string monoFont: ConfigService.monoFont
 
     // ── Palette cache watcher ───────────────────────────────────────
 
