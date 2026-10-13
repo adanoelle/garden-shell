@@ -114,7 +114,7 @@ Item {
                     text: sectionDelegate.modelData.label
                     color: Theme.text2
                     font.family: Theme.sansFont
-                    font.pixelSize: 12
+                    font.pixelSize: Theme.fontBody
                     font.weight: Font.DemiBold
                     bottomPadding: 2
                 }
@@ -143,7 +143,6 @@ Item {
                                     required property var modelData
                                     width: pillText.width + 12
                                     height: 20
-                                    radius: 4
                                     color: Theme.baseRaised
                                     border.color: Theme.borderSub
                                     border.width: 1
@@ -154,7 +153,7 @@ Item {
                                         text: modelData
                                         color: Theme.text2
                                         font.family: Theme.monoFont
-                                        font.pixelSize: 11
+                                        font.pixelSize: Theme.fontMeta
                                     }
                                 }
                             }
@@ -166,8 +165,8 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: bindRow.modelData.action
                             color: Theme.text3
-                            font.family: Theme.monoFont
-                            font.pixelSize: 11
+                            font.family: Theme.sansFont
+                            font.pixelSize: Theme.fontMeta
                         }
                     }
                 }

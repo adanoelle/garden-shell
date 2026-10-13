@@ -70,11 +70,44 @@ Singleton {
     property var allPaletteData: ({})
 
     // ── Fonts ───────────────────────────────────────────────────────
+    //
+    // Sans for human-facing text (names, actions, labels); mono for
+    // data and metadata (numbers, times, keys, ids).
+    //
+    // M PLUS 1 (the default sans) gives U+00B7 (·) zero advance width —
+    // it collides with the next word. Separators in sans text use
+    // U+2022 (•), which it draws at the same visual weight; mono text
+    // keeps ·.
 
     /// Chosen in Settings → palette → typography; stored in
     /// settings.json (ConfigService). Defaults: M PLUS 1, IBM Plex Mono.
     readonly property string sansFont: ConfigService.sansFont
     readonly property string monoFont: ConfigService.monoFont
+
+    // ── Type scale (px) ─────────────────────────────────────────────
+
+    readonly property int fontCaption: 10   // section labels, timestamps
+    readonly property int fontMeta:    11   // data, metadata, hints
+    readonly property int fontBody:    12   // rows, body text, buttons
+    readonly property int fontTitle:   13   // bar channel, card titles
+    readonly property int fontLarge:   14   // inputs, switcher, power menu
+    readonly property int fontHeading: 16   // section headings
+
+    // ── Spacing (4 px grid) ─────────────────────────────────────────
+
+    readonly property int space1: 4
+    readonly property int space2: 8
+    readonly property int space3: 12
+    readonly property int space4: 16
+
+    // ── Motion (ms) ─────────────────────────────────────────────────
+    //
+    // The design spec's timing hierarchy: Launcher fast, ChannelSwitcher
+    // and Settings base. Intentional — do not normalise.
+
+    readonly property int motionQuick: 120   // hover expansions, chips
+    readonly property int motionFast:  150   // launcher, ambient brighten
+    readonly property int motionBase:  200   // overlays, cards
 
     // ── Palette cache watcher ───────────────────────────────────────
 

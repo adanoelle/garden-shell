@@ -21,7 +21,6 @@ Rectangle {
 
     width: _label.width + 24
     height: 28
-    radius: 2
     color: root.active
         ? Theme.accent
         : (area.containsMouse ? Theme.baseRaised : Theme.base)
@@ -33,8 +32,8 @@ Rectangle {
         anchors.centerIn: parent
         text: root.label
         color: root.active ? Theme.baseDeep : Theme.text2
-        font.family: Theme.monoFont
-        font.pixelSize: 12
+        font.family: Theme.sansFont
+        font.pixelSize: Theme.fontBody
     }
 
     MouseArea {

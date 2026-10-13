@@ -126,8 +126,8 @@ OverlayBase {
                                 text: "palette"
                                 color: settings._activeTab === "palette"
                                     ? Theme.text1 : Theme.text3
-                                font.family: Theme.monoFont
-                                font.pixelSize: 12
+                                font.family: Theme.sansFont
+                                font.pixelSize: Theme.fontBody
                                 font.weight: settings._activeTab === "palette"
                                     ? Font.DemiBold : Font.Normal
                             }
@@ -152,8 +152,8 @@ OverlayBase {
                                 text: "keybinds"
                                 color: settings._activeTab === "keybinds"
                                     ? Theme.text1 : Theme.text3
-                                font.family: Theme.monoFont
-                                font.pixelSize: 12
+                                font.family: Theme.sansFont
+                                font.pixelSize: Theme.fontBody
                                 font.weight: settings._activeTab === "keybinds"
                                     ? Font.DemiBold : Font.Normal
                             }
@@ -174,7 +174,7 @@ OverlayBase {
                         text: "settings"
                         color: Theme.text4
                         font.family: Theme.monoFont
-                        font.pixelSize: 11
+                        font.pixelSize: Theme.fontMeta
                     }
                 }
 

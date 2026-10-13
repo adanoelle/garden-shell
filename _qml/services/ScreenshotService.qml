@@ -110,7 +110,7 @@ Singleton {
     function _notifySuccess() {
         const f = root._file;   // closures capture by value
         NotificationService.sendRich(
-            "screenshot", root._mode + " \u00b7 " + f.split("/").pop(),
+            "screenshot", root._mode + " \u2022 " + f.split("/").pop(),
             [   // order is load-bearing: card click-anywhere invokes [0]
                 { text: "copy",   invoke: () => root._copyFile(f) },
                 { text: "open",   invoke: () => Quickshell.execDetached(["xdg-open", f]) },

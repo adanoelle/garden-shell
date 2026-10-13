@@ -38,7 +38,7 @@ Column {
         text: root.sectionLabel
         color: Theme.text2
         font.family: Theme.sansFont
-        font.pixelSize: 12
+        font.pixelSize: Theme.fontBody
         font.weight: Font.DemiBold
         bottomPadding: 2
     }
@@ -59,7 +59,6 @@ Column {
 
                 width: chipLabel.width + 24
                 height: 30
-                radius: 2
                 color: chip.selected ? Theme.baseHl
                     : (chipArea.containsMouse ? Theme.baseRaised : Theme.base)
                 border.width: 1
@@ -71,7 +70,7 @@ Column {
                     text: chip.modelData
                     color: chip.selected ? Theme.text1 : Theme.text2
                     font.family: chip.modelData
-                    font.pixelSize: 13
+                    font.pixelSize: Theme.fontTitle
                 }
 
                 MouseArea {
@@ -95,7 +94,7 @@ Column {
         text: root.sample
         color: Theme.text3
         font.family: root.current
-        font.pixelSize: 13
+        font.pixelSize: Theme.fontTitle
         elide: Text.ElideRight
     }
 }

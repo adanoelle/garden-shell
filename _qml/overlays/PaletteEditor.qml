@@ -305,14 +305,14 @@ Item {
                 text: root._palettesData.palettes?.[root._editingPalette]?.icon || "\u25cf"
                 color: Theme.text1
                 font.family: Theme.monoFont
-                font.pixelSize: 16
+                font.pixelSize: Theme.fontHeading
                 anchors.verticalCenter: parent.verticalCenter
             }
             Text {
                 text: root._editingPalette
                 color: Theme.text1
                 font.family: Theme.sansFont
-                font.pixelSize: 16
+                font.pixelSize: Theme.fontHeading
                 font.weight: Font.DemiBold
                 anchors.verticalCenter: parent.verticalCenter
             }
@@ -321,7 +321,7 @@ Item {
                 text: "(unsaved)"
                 color: Theme.urgent
                 font.family: Theme.monoFont
-                font.pixelSize: 12
+                font.pixelSize: Theme.fontBody
                 anchors.verticalCenter: parent.verticalCenter
             }
         }
@@ -378,7 +378,7 @@ Item {
                     text: "preview"
                     color: Theme.text2
                     font.family: Theme.sansFont
-                    font.pixelSize: 12
+                    font.pixelSize: Theme.fontBody
                     font.weight: Font.DemiBold
                 }
 
@@ -402,7 +402,7 @@ Item {
                 text: "typography"
                 color: Theme.text2
                 font.family: Theme.sansFont
-                font.pixelSize: 12
+                font.pixelSize: Theme.fontBody
                 font.weight: Font.DemiBold
             }
 
@@ -412,7 +412,7 @@ Item {
                 role: "sans"
                 choices: ConfigService.sansFontChoices
                 current: Theme.sansFont
-                sample: "research · 3 columns · Thu Oct 13 14:20"
+                sample: "research \u2022 3 columns \u2022 Thu Oct 13 14:20"
             }
 
             FontPicker {
@@ -430,7 +430,7 @@ Item {
                 text: "mono also sets kitty, Ghostty and presenterm (new windows)"
                 color: Theme.text3
                 font.family: Theme.sansFont
-                font.pixelSize: 11
+                font.pixelSize: Theme.fontMeta
             }
         }
 
