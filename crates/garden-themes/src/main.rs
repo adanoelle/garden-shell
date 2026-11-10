@@ -268,6 +268,8 @@ fn cmd_apply(palettes_path: Option<&Path>, name: Option<&str>) -> Result<()> {
     reload_kitty(&themes_dir);
     reload_fish(&themes_dir);
     reload_kakoune(&themes_dir);
+    reload_helix(&themes_dir);
+    reload_ghostty(&themes_dir);
     reload_niri();
 
     Ok(())
@@ -537,6 +539,54 @@ fn reload_kakoune(themes_dir: &Path) {
 
     if reloaded > 0 {
         println!("  reloaded {reloaded} kakoune session(s)");
+    }
+}
+
+/// Sends `signal` to every process whose name is exactly one of `names`.
+///
+/// Exact matching (`pkill -x`) matters: the default action of SIGUSR1
+/// and SIGUSR2 is to terminate, so a loose pattern could kill an
+/// unrelated process that merely contains the name.
+fn signal_processes(app: &str, signal: &str, names: &[&str]) {
+    let mut reloaded = false;
+    for name in names {
+        match Command::new("pkill")
+            .args([signal, "-x", name])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+        {
+            Ok(s) if s.success() => reloaded = true,
+            // pkill exits 1 when no process matched — the app isn't running.
+            Ok(s) if s.code() == Some(1) => {}
+            Ok(s) => eprintln!("  warning: {app} reload failed: pkill exited with {s}"),
+            Err(e) => eprintln!("  warning: {app} reload failed: could not run pkill: {e}"),
+        }
+    }
+    if reloaded {
+        println!("  reloaded {app}");
+    }
+}
+
+/// Tells running Helix editors to reload their config, which re-reads
+/// the theme file (Helix handles SIGUSR1 like `:config-reload`).
+///
+/// `.hx-wrapped` is the process name under nixpkgs' wrapper.
+fn reload_helix(themes_dir: &Path) {
+    if themes_dir.join("helix/garden.toml").exists() {
+        signal_processes("helix", "-USR1", &["hx", ".hx-wrapped"]);
+    }
+}
+
+/// Tells running Ghostty instances to reload their config (SIGUSR2),
+/// picking up the theme through the `config-file` include.
+///
+/// `.ghostty-wrappe` is nixpkgs' `.ghostty-wrapped`, cut to the
+/// kernel's 15-character process name.
+fn reload_ghostty(themes_dir: &Path) {
+    if themes_dir.join("ghostty/garden-theme").exists() {
+        signal_processes("ghostty", "-USR2", &["ghostty", ".ghostty-wrappe"]);
     }
 }
 
