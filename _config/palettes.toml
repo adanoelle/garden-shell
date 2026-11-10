@@ -189,3 +189,44 @@ accent = "#c4a050"
 urgent = "#c07848"
 ok = "#7a9060"
 
+[palettes.nocturne]
+name = "nocturne"
+subtitle = "dark -- whistler: thames grey x moon gold"
+icon = "◎"
+builtin = true
+
+[palettes.nocturne.colors]
+base-deep = "#1b1f1d"
+base = "#212624"
+base-raised = "#29302d"
+base-hl = "#333b37"
+border-sub = "#313834"
+border = "#465049"
+text-4 = "#5c665f"
+text-3 = "#7b857c"
+text-2 = "#a3aa9e"
+text-1 = "#d2d3c2"
+accent = "#c9925a"
+urgent = "#c0705a"
+ok = "#7f9a86"
+
+[palettes.tenebroso]
+name = "tenebroso"
+subtitle = "dark -- caravaggio: bone black x ochre x crimson"
+icon = "◉"
+builtin = true
+
+[palettes.tenebroso.colors]
+base-deep = "#0f0b07"
+base = "#15100a"
+base-raised = "#1e1710"
+base-hl = "#2a2016"
+border-sub = "#271e14"
+border = "#40311f"
+text-4 = "#5e4c36"
+text-3 = "#84705a"
+text-2 = "#b09a7c"
+text-1 = "#e2d5b8"
+accent = "#c8964a"
+urgent = "#c04e36"
+ok = "#8b9060"

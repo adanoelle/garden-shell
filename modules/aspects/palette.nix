@@ -1,5 +1,5 @@
 # modules/aspects/palette.nix — foundation palette aspect
-{ garden, ... }:
+{ garden, self, ... }:
 {
   garden.palette = {
     homeManager = { config, lib, pkgs, ... }: {
@@ -18,6 +18,12 @@
         if [ ! -f "${config.xdg.configHome}/garden/palettes.toml" ]; then
           install -Dm644 ${../../_config/palettes.toml} \
             ${config.xdg.configHome}/garden/palettes.toml
+        else
+          # Built-in palettes added since the file was seeded. Existing
+          # palettes and the active selection are left alone.
+          ${self.packages.${pkgs.stdenv.hostPlatform.system}.garden-themes}/bin/garden-themes \
+            sync-builtins ${../../_config/palettes.toml} \
+            || echo "warning: garden-themes sync-builtins failed" >&2
         fi
       '';
     };

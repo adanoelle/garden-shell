@@ -10,6 +10,7 @@
 //! garden-themes list <path>
 //! garden-themes generate --palettes <path> [--name <palette>] --output <dir>
 //! garden-themes apply [--palettes <path>] [--name <palette>]
+//! garden-themes sync-builtins <shipped palettes.toml>
 //! ```
 
 use std::fs;
@@ -73,6 +74,13 @@ enum Cmd {
         #[arg(long)]
         name: Option<String>,
     },
+
+    /// Add built-in palettes from a shipped palettes.toml that the
+    /// user's ~/.config/garden/palettes.toml does not have yet.
+    SyncBuiltins {
+        /// Path to the shipped palettes.toml.
+        shipped: PathBuf,
+    },
 }
 
 /// Manifest written to `.manifest.json` after a successful `apply`.
@@ -96,6 +104,7 @@ fn main() -> Result<()> {
             output,
         } => cmd_generate(&palettes, name.as_deref(), &output),
         Cmd::Apply { palettes, name } => cmd_apply(palettes.as_deref(), name.as_deref()),
+        Cmd::SyncBuiltins { shipped } => cmd_sync_builtins(&shipped),
     }
 }
 
@@ -272,6 +281,40 @@ fn cmd_apply(palettes_path: Option<&Path>, name: Option<&str>) -> Result<()> {
     reload_ghostty(&themes_dir);
     reload_niri();
 
+    Ok(())
+}
+
+/// Adds built-in palettes the user's `palettes.toml` is missing.
+///
+/// The user's file is seeded once and then mutable, so palettes added
+/// in a later release would otherwise never reach an existing
+/// installation. Existing palettes and the active selection are left
+/// alone. The JSON cache the shell reads is refreshed when themes have
+/// been applied before, so new palettes show up in the switcher.
+fn cmd_sync_builtins(shipped_path: &Path) -> Result<()> {
+    let garden_dir = xdg_config_home()?.join("garden");
+    let palettes_file = garden_dir.join("palettes.toml");
+
+    let shipped = load_palettes(shipped_path)?;
+    let mut col = load_palettes(&palettes_file)?;
+
+    let added = col.add_missing_builtins(&shipped);
+    if added.is_empty() {
+        return Ok(());
+    }
+
+    let toml_out = col
+        .to_toml_pretty()
+        .map_err(|e| anyhow::anyhow!(e))
+        .context("failed to serialize palettes")?;
+    write_atomic(&palettes_file, &format!("{toml_out}\n"))?;
+
+    let themes_dir = garden_dir.join("themes");
+    if themes_dir.join("palettes.json").exists() {
+        write_palette_cache(&col, &themes_dir)?;
+    }
+
+    println!("added built-in palette(s): {}", added.join(", "));
     Ok(())
 }
 
