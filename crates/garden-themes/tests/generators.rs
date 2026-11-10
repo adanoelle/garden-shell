@@ -921,6 +921,133 @@ fn obsidian_relative_path() {
     assert_eq!(obsidian.relative_path(), "obsidian/garden-theme.css");
 }
 
+// ── Helix ─────────────────────────────────────────────────────────────
+
+#[test]
+fn helix_output_contains_header() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let output = generators::helix::Helix.generate(palette);
+
+    assert!(output.contains("Garden theme"));
+    assert!(output.contains(&col.active));
+    assert!(output.contains("Do not edit by hand"));
+}
+
+#[test]
+fn helix_palette_table_has_all_roles() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let output = generators::helix::Helix.generate(palette);
+
+    let table = output
+        .split("[palette]")
+        .nth(1)
+        .expect("theme should end with a [palette] table");
+    let base = palette.color(ColorRole::Base).unwrap().as_str();
+    let ok = palette.color(ColorRole::Ok).unwrap().as_str();
+    assert!(table.contains(&format!("base = \"{base}\"")));
+    assert!(table.contains(&format!("ok = \"{ok}\"")));
+    assert_eq!(
+        table.lines().filter(|l| l.contains(" = \"#")).count(),
+        13,
+        "one entry per semantic role"
+    );
+}
+
+#[test]
+fn helix_scopes_only_reference_palette_roles() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let output = generators::helix::Helix.generate(palette);
+
+    let (scopes, table) = output.split_once("[palette]").unwrap();
+    let roles: Vec<&str> = table
+        .lines()
+        .filter_map(|l| l.split_once(" = ").map(|(k, _)| k))
+        .collect();
+    // Words that may appear quoted on the value side without being colors.
+    let non_colors = ["bold", "italic", "underlined", "dim", "crossed_out", "curl"];
+
+    for line in scopes.lines().filter(|l| l.starts_with('"')) {
+        let (_, value) = line.split_once(" = ").unwrap();
+        for word in value.split('"').skip(1).step_by(2) {
+            assert!(
+                roles.contains(&word) || non_colors.contains(&word),
+                "scope line references unknown color {word:?}: {line}"
+            );
+        }
+    }
+    assert!(scopes.contains("\"ui.background\" = { bg = \"base\" }"));
+    assert!(scopes.contains("\"comment\""));
+    assert!(scopes.contains("\"markup.heading\""));
+}
+
+#[test]
+fn helix_relative_path() {
+    assert_eq!(
+        generators::helix::Helix.relative_path(),
+        "helix/garden.toml"
+    );
+}
+
+// ── Ghostty ───────────────────────────────────────────────────────────
+
+#[test]
+fn ghostty_output_contains_header() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let output = generators::ghostty::Ghostty.generate(palette);
+
+    assert!(output.contains("Garden theme"));
+    assert!(output.contains(&col.active));
+    assert!(output.contains("Do not edit by hand"));
+}
+
+#[test]
+fn ghostty_output_contains_palette_colors() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let output = generators::ghostty::Ghostty.generate(palette);
+
+    let base = palette.color(ColorRole::Base).unwrap().as_str();
+    let text1 = palette.color(ColorRole::Text1).unwrap().as_str();
+    let urgent = palette.color(ColorRole::Urgent).unwrap().as_str();
+    let ok = palette.color(ColorRole::Ok).unwrap().as_str();
+
+    assert!(output.contains(&format!("background = {base}")));
+    assert!(output.contains(&format!("foreground = {text1}")));
+    assert!(output.contains(&format!("palette = 1={urgent}")));
+    assert!(output.contains(&format!("palette = 2={ok}")));
+}
+
+#[test]
+fn ghostty_ansi_slots_match_kitty() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let ghostty = generators::ghostty::Ghostty.generate(palette);
+    let kitty = generators::kitty::Kitty.generate(palette);
+
+    for i in 0..16 {
+        let kitty_color = kitty
+            .lines()
+            .find_map(|l| l.strip_prefix(&format!("color{i} ")))
+            .unwrap_or_else(|| panic!("kitty slot {i} missing"));
+        assert!(
+            ghostty.contains(&format!("palette = {i}={kitty_color}\n")),
+            "ANSI slot {i} should match kitty ({kitty_color})"
+        );
+    }
+}
+
+#[test]
+fn ghostty_relative_path() {
+    assert_eq!(
+        generators::ghostty::Ghostty.relative_path(),
+        "ghostty/garden-theme"
+    );
+}
+
 // ── Registry ──────────────────────────────────────────────────────────
 
 #[test]
@@ -928,8 +1055,8 @@ fn all_generators_registered() {
     let gens = generators::all();
     assert_eq!(
         gens.len(),
-        11,
-        "expected kitty + fish + kakoune + fzf + bat + lazygit + btop + yazi + zathura + niri + obsidian"
+        13,
+        "expected kitty + fish + kakoune + fzf + bat + lazygit + btop + yazi + zathura + niri + obsidian + helix + ghostty"
     );
 
     let names: Vec<&str> = gens.iter().map(|g| g.name()).collect();
@@ -944,6 +1071,8 @@ fn all_generators_registered() {
     assert!(names.contains(&"zathura"));
     assert!(names.contains(&"niri"));
     assert!(names.contains(&"obsidian"));
+    assert!(names.contains(&"helix"));
+    assert!(names.contains(&"ghostty"));
 }
 
 #[test]

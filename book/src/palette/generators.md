@@ -6,13 +6,15 @@
 ## What generators do
 
 A generator takes a validated palette and produces a complete configuration
-fragment for one application. Garden currently ships three generators:
+fragment for one application. The terminal and editor generators:
 
 | Generator | Output file | Format |
 |-----------|------------|--------|
 | kitty | `kitty/garden-theme.conf` | Kitty color conf (`#rrggbb`) |
 | fish | `fish/garden-theme.fish` | Fish universal vars (bare hex) |
 | kakoune | `kak/garden.kak` | Kakoune face declarations (`rgb:rrggbb`) |
+| helix | `helix/garden.toml` | Helix theme (roles as a `[palette]` table) |
+| ghostty | `ghostty/garden-theme` | Ghostty config colors (`#rrggbb`) |
 
 Run all generators for the active palette:
 

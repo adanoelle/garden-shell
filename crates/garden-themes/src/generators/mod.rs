@@ -20,6 +20,8 @@
 //! | [`Zathura`] | `zathura/gardenrc`          | zathurarc set cmds    |
 //! | [`Niri`]    | `niri/garden-colors.kdl`    | KDL include fragment  |
 //! | [`Obsidian`]| `obsidian/garden-theme.css` | CSS snippet (dark)    |
+//! | [`Helix`]   | `helix/garden.toml`         | Helix theme TOML      |
+//! | [`Ghostty`] | `ghostty/garden-theme`      | Ghostty config colors |
 //!
 //! # Adding a new generator
 //!
@@ -46,6 +48,8 @@ pub mod bat;
 pub mod btop;
 pub mod fish;
 pub mod fzf;
+pub mod ghostty;
+pub mod helix;
 pub mod kakoune;
 pub mod kitty;
 pub mod lazygit;
@@ -96,5 +100,7 @@ pub fn all() -> Vec<Box<dyn ThemeGenerator>> {
         Box::new(zathura::Zathura),
         Box::new(niri::Niri),
         Box::new(obsidian::Obsidian),
+        Box::new(helix::Helix),
+        Box::new(ghostty::Ghostty),
     ]
 }
