@@ -23,7 +23,8 @@
 //!
 //! # Built-in palettes
 //!
-//! Garden ships with nine palettes inspired by Japanese craft traditions:
+//! Garden ships with nine palettes inspired by Japanese craft traditions,
+//! and two built from a painter's working palette:
 //!
 //! | Name      | Icon | Character                              |
 //! |-----------|------|----------------------------------------|
@@ -36,6 +37,8 @@
 //! | sumi      | ●    | Neutral — charcoal ink × amber         |
 //! | tsuchi    | ◓    | Dark — london clay × parchment         |
 //! | yoru      | ◑    | Night — no blue light × amber          |
+//! | nocturne  | ◎    | Dark — Whistler: thames grey × moon gold |
+//! | tenebroso | ◉    | Dark — Caravaggio: bone black × ochre × crimson |
 //!
 //! # Pipeline
 //!
@@ -451,6 +454,24 @@ impl PaletteCollection {
         Self::from_toml(&contents)
     }
 
+    /// Adds every built-in palette of `shipped` that this collection
+    /// does not have yet, returning the names added (sorted).
+    ///
+    /// Existing palettes are never touched, even built-in ones the user
+    /// has edited, and `active` is kept. This is how an installation
+    /// whose mutable `palettes.toml` was seeded by an older release
+    /// receives palettes added since.
+    pub fn add_missing_builtins(&mut self, shipped: &PaletteCollection) -> Vec<String> {
+        let mut added = Vec::new();
+        for (key, palette) in &shipped.palettes {
+            if palette.builtin && !self.palettes.contains_key(key) {
+                self.palettes.insert(key.clone(), palette.clone());
+                added.push(key.clone());
+            }
+        }
+        added
+    }
+
     /// Returns a reference to the currently active palette, or `None`
     /// if the `active` key does not match any palette name.
     pub fn active_palette(&self) -> Option<&Palette> {
@@ -532,6 +553,22 @@ mod tests {
         let col = PaletteCollection::from_toml(PALETTES_TOML).unwrap();
         let active = col.active_palette().expect("active palette should exist");
         assert_eq!(active.name, col.active);
+    }
+
+    #[test]
+    fn add_missing_builtins_keeps_existing_and_active() {
+        let shipped = PaletteCollection::from_toml(PALETTES_TOML).unwrap();
+        let mut user = shipped.clone();
+        user.active = "kinu".to_string();
+        user.palettes.remove("nocturne");
+        // A built-in the user has edited must not be reset.
+        user.palettes.get_mut("sumi").unwrap().subtitle = "mine".to_string();
+
+        assert_eq!(user.add_missing_builtins(&shipped), ["nocturne"]);
+        assert!(user.palettes.contains_key("nocturne"));
+        assert_eq!(user.palettes["sumi"].subtitle, "mine");
+        assert_eq!(user.active, "kinu");
+        assert!(user.add_missing_builtins(&shipped).is_empty());
     }
 
     #[test]
