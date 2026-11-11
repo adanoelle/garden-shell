@@ -39,6 +39,9 @@
 //! | yoru      | ◑    | Night — no blue light × amber          |
 //! | nocturne  | ◎    | Dark — Whistler: thames grey × moon gold |
 //! | tenebroso | ◉    | Dark — Caravaggio: bone black × ochre × crimson |
+//! | poesia    | ◆    | Dark — Titian: ultramarine × crimson lake × gold |
+//! | impasto   | ◈    | Dark — Rembrandt: umber × lamp gold |
+//! | brabant   | ◇    | Light — Bruegel: sea green × furrow ochre × madder |
 //!
 //! # Pipeline
 //!

@@ -230,3 +230,66 @@ text-1 = "#e2d5b8"
 accent = "#c8964a"
 urgent = "#c04e36"
 ok = "#8b9060"
+
+[palettes.poesia]
+name = "poesia"
+subtitle = "dark -- titian: ultramarine x crimson lake x gold"
+icon = "◆"
+builtin = true
+
+[palettes.poesia.colors]
+base-deep = "#111a2e"
+base = "#162038"
+base-raised = "#1d2946"
+base-hl = "#263455"
+border-sub = "#232f4c"
+border = "#364469"
+text-4 = "#56658c"
+text-3 = "#7887aa"
+text-2 = "#a5afc6"
+text-1 = "#e6dcc6"
+accent = "#d3a24f"
+urgent = "#d0607a"
+ok = "#7fa87c"
+
+[palettes.impasto]
+name = "impasto"
+subtitle = "dark -- rembrandt: umber x lamp gold"
+icon = "◈"
+builtin = true
+
+[palettes.impasto.colors]
+base-deep = "#1b140c"
+base = "#231a10"
+base-raised = "#2d2216"
+base-hl = "#3a2c1c"
+border-sub = "#35281a"
+border = "#4f3d27"
+text-4 = "#6b573c"
+text-3 = "#907954"
+text-2 = "#baa074"
+text-1 = "#edd6a0"
+accent = "#e0a542"
+urgent = "#c8643c"
+ok = "#939a64"
+
+[palettes.brabant]
+name = "brabant"
+subtitle = "light -- bruegel: sea green x furrow ochre x madder"
+icon = "◇"
+builtin = true
+
+[palettes.brabant.colors]
+base-deep = "#cfd8ca"
+base = "#dbe2d6"
+base-raised = "#e5ebe0"
+base-hl = "#c8d2c3"
+border-sub = "#bfcaba"
+border = "#aebaa9"
+text-4 = "#8e9c8c"
+text-3 = "#6f7f70"
+text-2 = "#47584c"
+text-1 = "#1f2d26"
+accent = "#84651a"
+urgent = "#a8402c"
+ok = "#3a6e4c"
