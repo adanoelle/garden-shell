@@ -293,3 +293,66 @@ text-1 = "#1f2d26"
 accent = "#84651a"
 urgent = "#a8402c"
 ok = "#3a6e4c"
+
+[palettes.lampshade]
+name = "lampshade"
+subtitle = "dark -- sargent's dinner table: crimson dusk x lamp orange"
+icon = "◍"
+builtin = true
+
+[palettes.lampshade.colors]
+base-deep = "#14080a"
+base = "#1b0c0e"
+base-raised = "#251114"
+base-hl = "#32181b"
+border-sub = "#2e1518"
+border = "#4a2326"
+text-4 = "#7a524b"
+text-3 = "#9c766e"
+text-2 = "#c2a399"
+text-1 = "#eeddc8"
+accent = "#f07a4a"
+urgent = "#e84d6a"
+ok = "#a8a67a"
+
+[palettes.lantern]
+name = "lantern"
+subtitle = "dark -- sargent's lanterns: garden dusk x paper-lantern peach"
+icon = "◖"
+builtin = true
+
+[palettes.lantern.colors]
+base-deep = "#0f1a19"
+base = "#14211f"
+base-raised = "#1b2b29"
+base-hl = "#243734"
+border-sub = "#213230"
+border = "#344a46"
+text-4 = "#5a706c"
+text-3 = "#7d928d"
+text-2 = "#a9b8b2"
+text-1 = "#ece6ea"
+accent = "#f2a488"
+urgent = "#e0708f"
+ok = "#8fbf8a"
+
+[palettes.chiaro]
+name = "chiaro"
+subtitle = "dark -- early caravaggio: olive ground x straw x wine"
+icon = "◗"
+builtin = true
+
+[palettes.chiaro.colors]
+base-deep = "#1a1913"
+base = "#22211a"
+base-raised = "#2b2a21"
+base-hl = "#37352a"
+border-sub = "#323026"
+border = "#4b4838"
+text-4 = "#6c6853"
+text-3 = "#908a70"
+text-2 = "#b9b295"
+text-1 = "#efe7d2"
+accent = "#d8b25e"
+urgent = "#dc6470"
+ok = "#9aa85e"
