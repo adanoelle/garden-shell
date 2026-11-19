@@ -22,6 +22,8 @@
 //! | [`Obsidian`]| `obsidian/garden-theme.css` | CSS snippet (dark)    |
 //! | [`Helix`]   | `helix/garden.toml`         | Helix theme TOML      |
 //! | [`Ghostty`] | `ghostty/garden-theme`      | Ghostty config colors |
+//! | [`Gtk`]     | `gtk/garden-colors.css`     | GTK named colours     |
+//! | [`Krita`]   | `krita/Garden.colors`       | KDE colour scheme     |
 //!
 //! # Adding a new generator
 //!
@@ -49,9 +51,11 @@ pub mod btop;
 pub mod fish;
 pub mod fzf;
 pub mod ghostty;
+pub mod gtk;
 pub mod helix;
 pub mod kakoune;
 pub mod kitty;
+pub mod krita;
 pub mod lazygit;
 pub mod niri;
 pub mod obsidian;
@@ -102,5 +106,7 @@ pub fn all() -> Vec<Box<dyn ThemeGenerator>> {
         Box::new(obsidian::Obsidian),
         Box::new(helix::Helix),
         Box::new(ghostty::Ghostty),
+        Box::new(gtk::Gtk),
+        Box::new(krita::Krita),
     ]
 }

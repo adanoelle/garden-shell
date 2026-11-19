@@ -16,6 +16,16 @@ fragment for one application. The terminal and editor generators:
 | helix | `helix/garden.toml` | Helix theme (roles as a `[palette]` table) |
 | ghostty | `ghostty/garden-theme` | Ghostty config colors (`#rrggbb`) |
 
+Two more recolour graphical applications:
+
+| Generator | Output file | Format |
+|-----------|------------|--------|
+| gtk | `gtk/garden-colors.css` | GTK named colours (`@define-color`) |
+| krita | `krita/Garden.colors` | KDE colour scheme (`r,g,b`) |
+
+These are read when an application starts, so a palette switch shows
+the next time it is opened. See [Graphical applications](#graphical-applications).
+
 Run all generators for the active palette:
 
 ```bash
@@ -160,6 +170,35 @@ face global documentation      rgb:6b7a8d
 face global meta               rgb:c9b88c
 face global builtin            rgb:8b9bb0+b
 ```
+
+## Graphical applications
+
+### GTK
+
+`gtk/garden-colors.css` is a list of named colours. Import it from both
+`~/.config/gtk-3.0/gtk.css` and `~/.config/gtk-4.0/gtk.css`:
+
+```css
+@import url("file:///home/you/.config/garden/themes/gtk/garden-colors.css");
+```
+
+GTK 4 and libadwaita applications follow the names directly. GTK 3
+applications follow them under the `adw-gtk3` theme, which is written
+against the same names.
+
+GTK applications also have a dark and a light variant, chosen from the
+desktop's `color-scheme` setting. A palette counts as dark when its
+`base` is darker than its `text-1`, and `garden-themes apply` writes
+the matching preference with `dconf`. On a machine without `dconf` that
+step is skipped.
+
+### Krita
+
+`krita/Garden.colors` is a KDE colour scheme, the format Krita uses for
+its window themes. Link it into `~/.local/share/krita/color-schemes/`
+and choose **Garden** once under Settings → Themes. The scheme keeps
+that name for every palette, so Krita shows the active palette each
+time it starts.
 
 ## Design rationale
 
