@@ -45,6 +45,12 @@
 //! | lampshade | ◍    | Dark — Sargent's dinner table: crimson dusk × lamp orange |
 //! | lantern   | ◖    | Dark — Sargent's lanterns: garden dusk × lantern peach |
 //! | chiaro    | ◗    | Dark — early Caravaggio: olive ground × straw × wine |
+//! | tempel    | ◬    | Light — af Klint: lilac ground × yolk yellow × vermilion |
+//! | giuditta  | ◘    | Dark — Gentileschi: bitumen × gown gold × lapis |
+//! | berceau   | ◠    | Light — Morisot: muslin white × jacket blue × rose |
+//! | barque    | ◡    | Dark — Cassatt: prussian water × boat chartreuse × rose |
+//! | chambre   | ◩    | Dark — Valadon: bedspread blue × peach × stripe green |
+//! | paille    | ◚    | Light — Vigée Le Brun: sky grey × dress rose × cornflower |
 //!
 //! # Pipeline
 //!

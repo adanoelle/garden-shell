@@ -356,3 +356,129 @@ text-1 = "#efe7d2"
 accent = "#d8b25e"
 urgent = "#dc6470"
 ok = "#9aa85e"
+
+[palettes.tempel]
+name = "tempel"
+subtitle = "light -- af klint: lilac ground x yolk yellow x vermilion"
+icon = "◬"
+builtin = true
+
+[palettes.tempel.colors]
+base-deep = "#cdbfc6"
+base = "#d9cdd2"
+base-raised = "#e4dadd"
+base-hl = "#c5b6bf"
+border-sub = "#bcacb6"
+border = "#a998a4"
+text-4 = "#8b7a87"
+text-3 = "#6c5c6a"
+text-2 = "#463948"
+text-1 = "#241a27"
+accent = "#7c5806"
+urgent = "#b03c28"
+ok = "#476b4c"
+
+[palettes.giuditta]
+name = "giuditta"
+subtitle = "dark -- gentileschi: bitumen x gown gold x lapis"
+icon = "◘"
+builtin = true
+
+[palettes.giuditta.colors]
+base-deep = "#130d0a"
+base = "#1a120d"
+base-raised = "#241912"
+base-hl = "#302118"
+border-sub = "#2d2017"
+border = "#473324"
+text-4 = "#66503a"
+text-3 = "#8d7556"
+text-2 = "#b79d73"
+text-1 = "#e6d5ac"
+accent = "#dba83a"
+urgent = "#c2452f"
+ok = "#6f93b0"
+
+[palettes.berceau]
+name = "berceau"
+subtitle = "light -- morisot: muslin white x jacket blue x rose"
+icon = "◠"
+builtin = true
+
+[palettes.berceau.colors]
+base-deep = "#d8d2c6"
+base = "#e4dfd4"
+base-raised = "#eeeae1"
+base-hl = "#d0c9bd"
+border-sub = "#c7c0b4"
+border = "#b4ac9f"
+text-4 = "#948c80"
+text-3 = "#726b62"
+text-2 = "#494540"
+text-1 = "#23201e"
+accent = "#465a8c"
+urgent = "#a8425a"
+ok = "#44755a"
+
+[palettes.barque]
+name = "barque"
+subtitle = "dark -- cassatt: prussian water x boat chartreuse x rose"
+icon = "◡"
+builtin = true
+
+[palettes.barque.colors]
+base-deep = "#0c161c"
+base = "#111d24"
+base-raised = "#18272f"
+base-hl = "#21333c"
+border-sub = "#1f3038"
+border = "#324850"
+text-4 = "#4e656a"
+text-3 = "#71888a"
+text-2 = "#9eafa8"
+text-1 = "#d8dac4"
+accent = "#c4ca5c"
+urgent = "#e08a8e"
+ok = "#7fa67e"
+
+[palettes.chambre]
+name = "chambre"
+subtitle = "dark -- valadon: bedspread blue x peach x stripe green"
+icon = "◩"
+builtin = true
+
+[palettes.chambre.colors]
+base-deep = "#0f1422"
+base = "#141a2b"
+base-raised = "#1b2337"
+base-hl = "#253049"
+border-sub = "#222c43"
+border = "#34425f"
+text-4 = "#54627f"
+text-3 = "#7887a1"
+text-2 = "#a7b1c0"
+text-1 = "#e3dfd6"
+accent = "#e6a58c"
+urgent = "#e0584a"
+ok = "#7db592"
+
+[palettes.paille]
+name = "paille"
+subtitle = "light -- vigee le brun: sky grey x dress rose x cornflower"
+icon = "◚"
+builtin = true
+
+[palettes.paille.colors]
+base-deep = "#c6c9c4"
+base = "#d3d6d0"
+base-raised = "#dfe1dc"
+base-hl = "#bdc1bc"
+border-sub = "#b3b8b3"
+border = "#9fa5a1"
+text-4 = "#808783"
+text-3 = "#606764"
+text-2 = "#3d4342"
+text-1 = "#1c2021"
+accent = "#8c3f58"
+urgent = "#b23a26"
+ok = "#3a6a7c"
