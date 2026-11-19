@@ -908,10 +908,7 @@ fn obsidian_output_has_expected_variables() {
     ];
 
     for var in expected_vars {
-        assert!(
-            output.contains(var),
-            "missing Obsidian CSS variable: {var}"
-        );
+        assert!(output.contains(var), "missing Obsidian CSS variable: {var}");
     }
 }
 
@@ -1055,8 +1052,8 @@ fn all_generators_registered() {
     let gens = generators::all();
     assert_eq!(
         gens.len(),
-        13,
-        "expected kitty + fish + kakoune + fzf + bat + lazygit + btop + yazi + zathura + niri + obsidian + helix + ghostty"
+        15,
+        "expected kitty + fish + kakoune + fzf + bat + lazygit + btop + yazi + zathura + niri + obsidian + helix + ghostty + gtk + krita"
     );
 
     let names: Vec<&str> = gens.iter().map(|g| g.name()).collect();
@@ -1073,6 +1070,8 @@ fn all_generators_registered() {
     assert!(names.contains(&"obsidian"));
     assert!(names.contains(&"helix"));
     assert!(names.contains(&"ghostty"));
+    assert!(names.contains(&"gtk"));
+    assert!(names.contains(&"krita"));
 }
 
 #[test]
@@ -1297,4 +1296,177 @@ fn active_palette_roundtrip() {
     let toml_out2 = col3.to_toml_pretty().unwrap();
     let col4 = PaletteCollection::from_toml(&toml_out2).unwrap();
     assert_eq!(col4.active, original_active);
+}
+
+// ── GTK ───────────────────────────────────────────────────────────────
+
+/// Helper: a shipped palette by name.
+fn shipped(name: &str) -> garden_core::Palette {
+    let col = PaletteCollection::from_toml(PALETTES_TOML).unwrap();
+    col.palettes
+        .get(name)
+        .unwrap_or_else(|| panic!("palette {name} should ship"))
+        .clone()
+}
+
+#[test]
+fn palettes_know_dark_from_light() {
+    assert!(shipped("fuji").is_dark());
+    assert!(shipped("giuditta").is_dark());
+    assert!(!shipped("ishi").is_dark());
+    assert!(!shipped("tempel").is_dark());
+}
+
+#[test]
+fn every_shipped_palette_matches_its_subtitle_mode() {
+    let col = PaletteCollection::from_toml(PALETTES_TOML).unwrap();
+    for (name, palette) in &col.palettes {
+        if palette.subtitle.starts_with("light") {
+            assert!(!palette.is_dark(), "{name} is described as light");
+        } else if palette.subtitle.starts_with("dark") {
+            assert!(palette.is_dark(), "{name} is described as dark");
+        }
+    }
+}
+
+#[test]
+fn gtk_output_contains_header() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let output = generators::gtk::Gtk.generate(palette);
+
+    assert!(output.contains("Garden theme"));
+    assert!(output.contains(&col.active));
+    assert!(output.contains("Do not edit by hand"));
+}
+
+#[test]
+fn gtk_output_defines_window_and_accent_colors() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let output = generators::gtk::Gtk.generate(palette);
+
+    let base = palette.color(ColorRole::Base).unwrap().as_str();
+    let text1 = palette.color(ColorRole::Text1).unwrap().as_str();
+    let accent = palette.color(ColorRole::Accent).unwrap().as_str();
+    let urgent = palette.color(ColorRole::Urgent).unwrap().as_str();
+
+    assert!(output.contains(&format!("@define-color window_bg_color {base};")));
+    assert!(output.contains(&format!("@define-color window_fg_color {text1};")));
+    assert!(output.contains(&format!("@define-color accent_bg_color {accent};")));
+    assert!(output.contains(&format!("@define-color destructive_bg_color {urgent};")));
+    // GTK 3's older names are defined too.
+    assert!(output.contains(&format!("@define-color theme_bg_color {base};")));
+}
+
+#[test]
+fn gtk_views_sit_below_the_window_when_dark_and_above_when_light() {
+    let dark = shipped("fuji");
+    let out = generators::gtk::Gtk.generate(&dark);
+    let deep = dark.color(ColorRole::BaseDeep).unwrap().as_str();
+    assert!(out.contains(&format!("@define-color view_bg_color {deep};")));
+    assert!(out.contains("(dark)"));
+
+    let light = shipped("ishi");
+    let out = generators::gtk::Gtk.generate(&light);
+    let raised = light.color(ColorRole::BaseRaised).unwrap().as_str();
+    assert!(out.contains(&format!("@define-color view_bg_color {raised};")));
+    assert!(out.contains("(light)"));
+}
+
+#[test]
+fn gtk_text_on_accent_is_readable_in_every_shipped_palette() {
+    let col = PaletteCollection::from_toml(PALETTES_TOML).unwrap();
+    for (name, palette) in &col.palettes {
+        let out = generators::gtk::Gtk.generate(palette);
+        let fg = out
+            .lines()
+            .find_map(|l| l.strip_prefix("@define-color accent_fg_color "))
+            .unwrap()
+            .trim_end_matches(';');
+        let fg = garden_core::HexColor::new(fg).unwrap();
+        let accent = palette.color(ColorRole::Accent).unwrap();
+        assert!(
+            accent.contrast(&fg) >= 3.0,
+            "{name}: text on the accent has contrast {:.2}",
+            accent.contrast(&fg)
+        );
+    }
+}
+
+#[test]
+fn gtk_relative_path() {
+    assert_eq!(
+        generators::gtk::Gtk.relative_path(),
+        "gtk/garden-colors.css"
+    );
+}
+
+// ── Krita ─────────────────────────────────────────────────────────────
+
+#[test]
+fn krita_output_contains_header() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let output = generators::krita::Krita.generate(palette);
+
+    assert!(output.contains("Garden theme"));
+    assert!(output.contains(&col.active));
+    assert!(output.contains("Do not edit by hand"));
+}
+
+#[test]
+fn krita_output_is_a_named_color_scheme() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let output = generators::krita::Krita.generate(palette);
+
+    // The name never changes, so Krita's selection survives a switch.
+    assert!(output.contains("[General]\nColorScheme=Garden\nName=Garden\n"));
+    for group in [
+        "Button",
+        "Selection",
+        "Tooltip",
+        "View",
+        "Window",
+        "Complementary",
+    ] {
+        assert!(
+            output.contains(&format!("[Colors:{group}]")),
+            "missing group {group}"
+        );
+    }
+}
+
+#[test]
+fn krita_output_uses_rgb_triplets() {
+    let col = active_collection();
+    let palette = col.active_palette().unwrap();
+    let output = generators::krita::Krita.generate(palette);
+
+    let base = palette.color(ColorRole::Base).unwrap();
+    let text1 = palette.color(ColorRole::Text1).unwrap();
+    let window = output.split("[Colors:Window]").nth(1).unwrap();
+
+    assert!(window.contains(&format!(
+        "BackgroundNormal={},{},{}\n",
+        base.r(),
+        base.g(),
+        base.b()
+    )));
+    assert!(window.contains(&format!(
+        "ForegroundNormal={},{},{}\n",
+        text1.r(),
+        text1.g(),
+        text1.b()
+    )));
+    assert!(!output.contains('#') || output.lines().all(|l| !l.contains("=#")));
+}
+
+#[test]
+fn krita_relative_path() {
+    assert_eq!(
+        generators::krita::Krita.relative_path(),
+        "krita/Garden.colors"
+    );
 }

@@ -187,6 +187,36 @@ impl HexColor {
     pub fn b(&self) -> u8 {
         u8::from_str_radix(&self.0[5..7], 16).unwrap()
     }
+
+    /// Returns the WCAG relative luminance, from 0.0 (black) to 1.0
+    /// (white).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use garden_core::palette::HexColor;
+    ///
+    /// assert_eq!(HexColor::new("#000000").unwrap().luminance(), 0.0);
+    /// assert!(HexColor::new("#ffffff").unwrap().luminance() > 0.99);
+    /// ```
+    pub fn luminance(&self) -> f64 {
+        let linear = |channel: u8| {
+            let c = f64::from(channel) / 255.0;
+            if c <= 0.04045 {
+                c / 12.92
+            } else {
+                ((c + 0.055) / 1.055).powf(2.4)
+            }
+        };
+        0.2126 * linear(self.r()) + 0.7152 * linear(self.g()) + 0.0722 * linear(self.b())
+    }
+
+    /// Returns the WCAG contrast ratio against `other`, from 1.0 (the
+    /// same luminance) to 21.0 (black on white).
+    pub fn contrast(&self, other: &HexColor) -> f64 {
+        let (a, b) = (self.luminance(), other.luminance());
+        (a.max(b) + 0.05) / (a.min(b) + 0.05)
+    }
 }
 
 impl TryFrom<String> for HexColor {
@@ -403,6 +433,19 @@ impl Palette {
     /// an invalid palette — see [`Palette::validate`]).
     pub fn color(&self, role: ColorRole) -> Option<&HexColor> {
         self.colors.get(&role)
+    }
+
+    /// Whether this is a dark palette: its background is darker than
+    /// its primary text.
+    ///
+    /// Generators for applications with separate dark and light modes
+    /// (GTK, for one) use this to pick the mode. A palette missing
+    /// either role counts as dark.
+    pub fn is_dark(&self) -> bool {
+        match (self.color(ColorRole::Base), self.color(ColorRole::Text1)) {
+            (Some(base), Some(text)) => base.luminance() < text.luminance(),
+            _ => true,
+        }
     }
 }
 

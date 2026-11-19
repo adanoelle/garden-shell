@@ -279,6 +279,7 @@ fn cmd_apply(palettes_path: Option<&Path>, name: Option<&str>) -> Result<()> {
     reload_kakoune(&themes_dir);
     reload_helix(&themes_dir);
     reload_ghostty(&themes_dir);
+    set_color_scheme(palette.is_dark());
     reload_niri();
 
     Ok(())
@@ -630,6 +631,35 @@ fn reload_helix(themes_dir: &Path) {
 fn reload_ghostty(themes_dir: &Path) {
     if themes_dir.join("ghostty/garden-theme").exists() {
         signal_processes("ghostty", "-USR2", &["ghostty", ".ghostty-wrappe"]);
+    }
+}
+
+/// Sets the desktop's dark or light preference to match the palette.
+///
+/// GTK and libadwaita applications, and anything that asks the
+/// settings portal, choose their dark or light variant from the
+/// `org.gnome.desktop.interface color-scheme` key. The generated
+/// `gtk/garden-colors.css` recolours them, but only this key tells
+/// them which variant to start from.
+///
+/// A machine without `dconf` is left alone, without a warning.
+fn set_color_scheme(dark: bool) {
+    let value = if dark {
+        "'prefer-dark'"
+    } else {
+        "'prefer-light'"
+    };
+    match Command::new("dconf")
+        .args(["write", "/org/gnome/desktop/interface/color-scheme", value])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+    {
+        Ok(s) if s.success() => println!("  set color scheme to {value}"),
+        Ok(s) => eprintln!("  warning: could not set color scheme: dconf exited with {s}"),
+        // dconf is not installed: nothing here follows the key.
+        Err(_) => {}
     }
 }
 
