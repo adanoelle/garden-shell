@@ -21,7 +21,7 @@
         # machine gets a themed terminal without a manual `garden-themes
         # apply`. Guarded on the manifest so an existing installation's
         # runtime palette selection is never clobbered. Also runs when a
-        # generator added since the last apply (helix, ghostty) has no
+        # generator added since the last apply (helix, ghostty, gtk) has no
         # output yet; apply regenerates for the palette that is active in
         # the mutable palettes.toml, so the selection is kept. Runs after
         # gardenPalettes (palette.nix) so palettes.toml exists. Best-effort:
@@ -30,7 +30,8 @@
           config.lib.dag.entryAfter [ "writeBoundary" "gardenPalettes" ] ''
             if [ ! -f "${themesDir}/.manifest.json" ] \
               || [ ! -f "${themesDir}/helix/garden.toml" ] \
-              || [ ! -f "${themesDir}/ghostty/garden-theme" ]; then
+              || [ ! -f "${themesDir}/ghostty/garden-theme" ] \
+              || [ ! -f "${themesDir}/gtk/garden-colors.css" ]; then
               ${gardenThemes}/bin/garden-themes apply \
                 || echo "warning: garden-themes seed failed; run 'garden-themes apply' manually" >&2
             fi
